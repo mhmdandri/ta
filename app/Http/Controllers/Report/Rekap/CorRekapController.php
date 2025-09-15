@@ -9,112 +9,199 @@ use Inertia\Inertia;
 
 class CorRekapController extends Controller
 {
-    public function index(Request $request)
+    // Fungsi untuk menghitung ringkasan statistik
+    // private function calculateSummary($transactions)
+    // {
+    //     return [
+    //         'total_transactions' => $transactions->count(),
+    //         'total_customers' => $transactions->pluck('customer.name')->filter()->unique()->count(),
+    //         'total_value' => $transactions->sum('total_final'),
+    //         'total_qty' => $transactions->sum('total_qty'),
+    //     ];
+    // }
+    // Fungsi untuk menentukan gudang utama berdasarkan jumlah item
+    private function determineMainWarehouse($items)
     {
-        $transactions = Transaction::with(['customer', 'sales', 'items.product'])
-            ->orderBy('created_at', 'desc')
-            ->get()
+        $warehouseCounts = $items->groupBy(function ($item) {
+            return $item->product->kode_gudang ?? '01';
+        })->map(function ($group) {
+            return $group->sum('qty');
+        });
+
+        return $warehouseCounts->keys()->first() ?? '01';
+    }
+    public function index()
+    {
+        $transactions = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
+            ->latest()
+            ->paginate(10);
+        $transformedTransactions = $transactions->getCollection()
             ->map(function ($transaction) {
                 return [
                     'id' => $transaction->id,
-                    'no_cor' => $transaction->no_penawaran ?? 'COR-' . str_pad($transaction->id, 4, '0', STR_PAD_LEFT),
-                    'customer_name' => $transaction->customer?->name ?? 'N/A',
-                    'sales_name' => $transaction->sales?->name ?? 'N/A',
-                    'status' => $transaction->transaction_type ?? 'COR',
-                    'divisi' => 'Rental', // You can add this field to transaction model
-                    'total_qty' => $transaction->items->sum('qty') ?? 0,
-                    'total_pricelist' => $transaction->total_pricelist ?? 0,
-                    'total_net' => $transaction->total_net ?? 0,
-                    'total_net_net' => $transaction->total_net_net ?? 0,
-                    'ppn_value' => $transaction->ppn_value ?? 0,
-                    'total_final' => $transaction->total_final ?? 0,
-                    'extra_discount' => $transaction->extra_discount ?? 0,
-                    'operate_fee' => $transaction->operate_fee ?? 0,
+                    'customer_id' => $transaction->customer_id,
+                    'sales_id' => $transaction->sales_id,
+                    'no_penawaran' => $transaction->no_penawaran,
+                    'no_po' => $transaction->no_po ?? '',
+                    'kode_gudang' => $this->determineMainWarehouse($transaction->items),
+                    'termin_of_payment' => $transaction->termin_of_payment ?? '',
+                    'payment' => $transaction->payment ?? '',
+                    'operate_fee' => (float) $transaction->operate_fee,
+                    'total_pricelist' => (float) $transaction->total_pricelist,
+                    'price_deal' => (float) $transaction->price_deal,
+                    'total_discount' => (float) $transaction->total_discount,
+                    'total_net' => (float) $transaction->total_net,
+                    'extra_discount' => (float) $transaction->extra_discount,
+                    'total_net_net' => (float) $transaction->total_net_net,
+                    'is_ppn' => (bool) $transaction->is_ppn,
+                    'ppn_value' => (float) $transaction->ppn_value,
+                    'total_final' => (float) $transaction->total_final,
+                    'transaction_type' => $transaction->transaction_type ?? 'rental',
                     'rental_start' => $transaction->rental_start,
                     'rental_end' => $transaction->rental_end,
                     'install_date' => $transaction->install_date,
                     'uninstall_date' => $transaction->uninstall_date,
-                    'created_at' => $transaction->created_at,
+                    'jenis_instalasi' => $transaction->jenis_instalasi,
+                    'location' => $transaction->location,
+                    'delivery' => $transaction->delivery,
+                    'description' => $transaction->description,
+                    'rental_duration' => $transaction->rental_duration,
+                    'pic' => $transaction->pic ?? '',
+                    'created_at' => $transaction->created_at->toISOString(),
+                    'updated_at' => $transaction->updated_at->toISOString(),
+                    'total_qty' => $transaction->items->sum('qty'),
+
+                    // Relations
+                    'customer' => $transaction->customer ? [
+                        'id' => $transaction->customer->id,
+                        'name' => $transaction->customer->name,
+                    ] : null,
+
+                    'sales' => $transaction->sales ? [
+                        'id' => $transaction->sales->id,
+                        'name' => $transaction->sales->name,
+                    ] : null,
+
                     'items' => $transaction->items->map(function ($item) {
                         return [
-                            'product_name' => $item->product?->name ?? 'N/A',
-                            'product_type' => $item->product?->category ?? 'Barang KMJ',
-                            'qty' => $item->qty ?? 0,
-                            'unit' => $item->product?->unit ?? 'Unit',
-                            'price_pricelist' => $item->price_pricelist ?? 0,
-                            'price_deal' => $item->price_deal ?? 0,
-                            'discount' => $item->discount ?? 0,
-                            'discount_percent' => $item->discount_percent ?? 0,
-                            'net_net' => $item->net_net ?? 0,
+                            'id' => $item->id,
+                            'transaction_id' => $item->transaction_id,
+                            'product_id' => $item->product_id,
+                            'qty' => (int) $item->qty,
+                            'discount' => (float) $item->discount,
+                            'discount_percent' => (float) $item->discount_percent,
+                            'net_net' => (float) $item->net_net,
+                            'price_deal' => (float) $item->price_deal,
+                            'price_pricelist' => (float) $item->price_pricelist,
+                            'price' => (float) $item->price,
+                            'product' => [
+                                'id' => $item->product->id,
+                                'code' => $item->product->code,
+                                'name' => $item->product->name,
+                                'description' => $item->product->description,
+                                'type' => $item->product->type,
+                                'price' => (float) $item->product->price,
+                                'stock' => (int) $item->product->stock,
+                                'kode_gudang' => $item->product->kode_gudang,
+                            ],
                         ];
-                    })
+                    }),
                 ];
             });
 
-        // Summary data
+        $transactions->setCollection($transformedTransactions);
+        $allTransactions = Transaction::with(['customer:id,name', 'items'])->latest()->get();
         $summary = [
-            'total_transactions' => $transactions->count(),
-            'total_customers' => $transactions->pluck('customer_name')->unique()->filter(function ($name) {
-                return $name !== 'N/A';
-            })->count(),
-            'total_value' => $transactions->sum('total_net_net'),
-            'total_qty' => $transactions->sum('total_qty'),
+            'total_transactions' => $allTransactions->count(),
+            'total_customers' => $allTransactions->pluck('customer.name')->filter()->unique()->count(),
+            'total_value' => $allTransactions->sum('total_final'),
+            'total_qty' => $allTransactions->sum(function ($transaction) {
+                return $transaction->items->sum('qty');
+            }),
         ];
-
         return Inertia::render('report/rekap/cor/index', [
             'transactions' => $transactions,
-            'summary' => $summary,
+            'summary' => $summary
         ]);
     }
-
-    public function show(Request $request, $id)
+    public function show($id)
     {
-        // $transaction = Transaction::with(['customer', 'sales', 'items.product'])
-        //     ->findOrFail($id);
-        $transaction = Transaction::with(['customer', 'sales', 'items' => function ($query) {
-            $query->with('product:id,name,kode_gudang,type'); // Tambahkan kode_gudang
-        }])->findOrFail($id);
-        $detailData = [
+        $transaction = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
+            ->findOrFail($id);
+        $transformedTransaction = [
             'id' => $transaction->id,
-            'no_cor' => $transaction->no_penawaran ?? 'COR-' . str_pad($transaction->id, 4, '0', STR_PAD_LEFT),
-            'customer_name' => $transaction->customer?->name ?? 'N/A',
-            'customer_address' => $transaction->customer?->address ?? 'N/A',
-            'sales_name' => $transaction->sales?->name ?? 'N/A',
-            'status' => $transaction->transaction_type ?? 'COR',
-            'divisi' => 'KCK',
-            'total_pricelist' => $transaction->total_pricelist ?? 0,
-            'total_net' => $transaction->total_net ?? 0,
-            'total_net_net' => $transaction->total_net_net ?? 0,
-            'ppn_value' => $transaction->ppn_value ?? 0,
-            'total_final' => $transaction->total_final ?? 0,
-            'extra_discount' => $transaction->extra_discount ?? 0,
-            'operate_fee' => $transaction->operate_fee ?? 0,
-            'total_discount' => $transaction->total_discount ?? 0,
+            'customer_id' => $transaction->customer_id,
+            'sales_id' => $transaction->sales_id,
+            'no_penawaran' => $transaction->no_penawaran,
+            'no_po' => $transaction->no_po ?? '',
+            'kode_gudang' => $this->determineMainWarehouse($transaction->items),
+            'termin_of_payment' => $transaction->termin_of_payment ?? '',
+            'payment' => $transaction->payment ?? '',
+            'operate_fee' => (float) $transaction->operate_fee,
+            'total_pricelist' => (float) $transaction->total_pricelist,
+            'price_deal' => (float) $transaction->price_deal,
+            'total_discount' => (float) $transaction->total_discount,
+            'total_net' => (float) $transaction->total_net,
+            'extra_discount' => (float) $transaction->extra_discount,
+            'total_net_net' => (float) $transaction->total_net_net,
+            'is_ppn' => (bool) $transaction->is_ppn,
+            'ppn_value' => (float) $transaction->ppn_value,
+            'total_final' => (float) $transaction->total_final,
+            'transaction_type' => $transaction->transaction_type ?? 'rental',
             'rental_start' => $transaction->rental_start,
             'rental_end' => $transaction->rental_end,
             'install_date' => $transaction->install_date,
             'uninstall_date' => $transaction->uninstall_date,
-            'pic' => $transaction->pic,
+            'jenis_instalasi' => $transaction->jenis_instalasi,
             'location' => $transaction->location,
             'delivery' => $transaction->delivery,
-            'created_at' => $transaction->created_at,
+            'description' => $transaction->description,
+            'rental_duration' => $transaction->rental_duration,
+            'pic' => $transaction->pic ?? '',
+            'created_at' => $transaction->created_at->toISOString(),
+            'updated_at' => $transaction->updated_at->toISOString(),
+            'total_qty' => $transaction->items->sum('qty'),
+
+            // Relations - konsisten dengan types.ts
+            'customer' => $transaction->customer ? [
+                'id' => $transaction->customer->id,
+                'name' => $transaction->customer->name,
+            ] : null,
+
+            'sales' => $transaction->sales ? [
+                'id' => $transaction->sales->id,
+                'name' => $transaction->sales->name,
+            ] : null,
+
+            // Items - konsisten dengan TransactionItem type
             'items' => $transaction->items->map(function ($item) {
                 return [
-                    'product_name' => $item->product?->name ?? 'N/A',
-                    'kode_gudang' => $item->product?->kode_gudang ?? 'N/A',
-                    'qty' => $item->qty ?? 0,
-                    'unit' => 'Unit',
-                    'price_pricelist' => $item->price_pricelist ?? 0,
-                    'price_deal' => $item->price_deal ?? 0,
-                    'discount' => $item->discount ?? 0,
-                    'discount_percent' => $item->discount_percent ?? 0,
-                    'net_net' => $item->net_net ?? 0,
+                    'id' => $item->id,
+                    'transaction_id' => $item->transaction_id,
+                    'product_id' => $item->product_id,
+                    'qty' => (int) $item->qty,
+                    'discount' => (float) $item->discount,
+                    'discount_percent' => (float) $item->discount_percent,
+                    'net_net' => (float) $item->net_net,
+                    'price_deal' => (float) $item->price_deal,
+                    'price_pricelist' => (float) $item->price_pricelist,
+                    'price' => (float) $item->price,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'code' => $item->product->code,
+                        'name' => $item->product->name,
+                        'description' => $item->product->description,
+                        'type' => $item->product->type,
+                        'price' => (float) $item->product->price,
+                        'stock' => (int) $item->product->stock,
+                        'kode_gudang' => $item->product->kode_gudang,
+                    ],
                 ];
-            })
+            }),
         ];
 
         return Inertia::render('report/rekap/cor/detail', [
-            'transaction' => $detailData,
+            'transaction' => $transformedTransaction,
         ]);
     }
 }

@@ -22,8 +22,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 });
+
+// route product
+Route::resource('product', ProductController::class)->middleware(['auth', 'verified']);
+
+// route transaksi
 Route::resource('transactions', TransactionController::class)->middleware(['auth', 'verified']);
-//Route::resource('reports', ReportController::class)->middleware(['auth', 'verified']);
+
+
+// route report
+Route::middleware(['auth'])->prefix('report')->name('report.')->group(function () {
+    Route::prefix('rekap')->name('rekap.')->group(function () {
+        Route::get('/cor', [CorRekapController::class, 'index'])->name('cor.index');
+        Route::get('/cor/{id}', [CorRekapController::class, 'show'])->name('cor.show');
+    });
+});
+
+//API
 Route::get('/products/search', function (Request $request) {
     $q = $request->get('q', '');
     $kodeGudang = $request->get('kode_gudang', '');
@@ -40,7 +55,6 @@ Route::get('/products/search', function (Request $request) {
         ->limit(10)
         ->get();
 });
-
 Route::get('/customers/search', function (Request $request) {
     $q = $request->get('q', '');
     return Customer::where('name', 'like', "%{$q}%")
@@ -56,22 +70,6 @@ Route::get('/users/search', function (Request $request) {
         ->get();
 });
 Route::get('/pricelists/{productId}', [PricelistController::class, 'show']);
-
-Route::middleware(['auth'])->prefix('report')->name('report.')->group(function () {
-    // Main page: /report
-    // Route::get('/', function () {
-    //     return Inertia::render('report/index'); // resources/js/Pages/report/index.tsx
-    // })->name('index');
-
-    // /report/rekap/cor
-    Route::prefix('rekap')->name('rekap.')->group(function () {
-        Route::get('/cor', [CorRekapController::class, 'index'])->name('cor.index');
-        Route::get('/cor/{id}', [CorRekapController::class, 'show'])->name('cor.show');
-
-        // (opsional) endpoint data untuk fetch tabel
-        // Route::get('/cor/data', [CorRekapController::class, 'data'])->name('cor.data');
-    });
-});
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

@@ -5,7 +5,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Notebook, NotebookPen, Receipt } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -15,19 +15,36 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
+        title: 'Produk',
+        href: '#',
+        icon: Package,
+        children: [
+            {
+                title: 'Daftar Produk',
+                href: '/product',
+                icon: Package,
+            },
+            {
+                title: 'Tambah Produk',
+                href: '/product/create',
+                icon: PackagePlus,
+            },
+        ],
+    },
+    {
         title: 'Transactions',
         href: '/transactions',
         icon: Receipt,
     },
     {
-        title: 'Reports',
+        title: 'Laporan',
         href: '/report',
         icon: NotebookPen,
         children: [
             {
                 title: 'Rekap COR',
                 href: '/report/rekap/cor',
-                icon: Notebook,
+                icon: NotebookPen,
             },
         ],
     },

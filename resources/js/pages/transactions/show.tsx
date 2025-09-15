@@ -777,11 +777,11 @@ export default function TransaksiShow() {
             <Head title={`Detail Transaksi - ${transaction?.no_penawaran || ''}`} />
 
             {/* Header Section */}
-            <div className="bg-gray-50 px-4 pt-4 dark:bg-neutral-900">
+            <div className="px-4 pt-4 dark:bg-neutral-900">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">Detail Transaksi</h1>
-                        <p className="text-muted-foreground">No. Penawaran: {transaction?.no_penawaran || '-'}</p>
+                        <p className="text-muted-foreground">No. COR: {transaction?.no_penawaran || '-'}</p>
                     </div>
 
                     {/* Action Buttons */}
@@ -817,7 +817,7 @@ export default function TransaksiShow() {
                 </div>
             </div>
 
-            <div className="flex min-h-screen flex-col space-y-6 bg-gray-50 p-6 dark:bg-neutral-900">
+            <div className="flex min-h-screen flex-col space-y-6 p-6 dark:bg-neutral-900">
                 {/* Customer & COR Info */}
                 <div className="mb-6 grid gap-4 md:grid-cols-2">
                     <Card>

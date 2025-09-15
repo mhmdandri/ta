@@ -1,0 +1,308 @@
+import Pagination from '@/components/Pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { formatRupiah } from '@/lib/formatRupiah';
+import { type Paginator, type Product } from '@/types/types';
+import { router, usePage } from '@inertiajs/react';
+import { Edit, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import DeleteProduct from './delete-product';
+
+type PageProps = {
+    products: Paginator<Product>;
+    filters: {
+        search: string;
+        type: string; // 'all' | 'jual' | 'sewa' | 'jasa'
+        kode_gudang: string; // 'all' | '01' | '02' | ...
+    };
+    options: {
+        types: string[]; // ['jual','sewa','jasa']
+        warehouses: string[]; // ['01','02',...]
+    };
+};
+
+type TableProductProps = {
+    className?: string;
+    showActions?: boolean;
+    onEdit?: (product: Product) => void;
+    onDelete?: (product: Product) => void;
+    onView?: (product: Product) => void;
+};
+
+export default function TableProduct({ className = '', showActions = true, onEdit, onDelete, onView }: TableProductProps) {
+    const { products, filters, options } = usePage<PageProps>().props;
+
+    // state lokal mirror dari filters server (untuk input controlled)
+    const [filter, setFilter] = useState(filters);
+
+    // Debounce untuk search
+    const debounceRef = useRef<number | null>(null);
+    const applyFilters = (next: typeof filter, replace = true) => {
+        router.get(
+            window.location.pathname, // tetap di halaman ini
+            {
+                search: next.search || '',
+                type: next.type || 'all',
+                kode_gudang: next.kode_gudang || 'all',
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                replace, // agar tidak menumpuk history saat mengetik
+            },
+        );
+    };
+
+    // sinkron ketika props filters dari server berubah (mis. pindah halaman)
+    useEffect(() => {
+        setFilter(filters);
+    }, [filters.search, filters.type, filters.kode_gudang]);
+
+    const handleFilterChange = (key: keyof typeof filter, value: string) => {
+        const next = { ...filter, [key]: value };
+        setFilter(next);
+
+        if (key === 'search') {
+            // debounce 400ms
+            if (debounceRef.current) window.clearTimeout(debounceRef.current);
+            debounceRef.current = window.setTimeout(() => {
+                applyFilters(next, true);
+            }, 400);
+        } else {
+            // dropdown langsung apply tanpa debounce
+            applyFilters(next, false);
+        }
+    };
+
+    const getTypeBadgeVariant = (type: Product['type']) => {
+        switch (type) {
+            case 'jual':
+                return 'default';
+            case 'sewa':
+                return 'secondary';
+            case 'jasa':
+                return 'outline';
+            default:
+                return 'default';
+        }
+    };
+
+    const getStockBadgeVariant = (stock: number) => {
+        if (stock === 0) return 'destructive';
+        if (stock <= 10) return 'outline';
+        return 'default';
+    };
+    const source = products?.data ?? [];
+    const [openDelete, setOpenDelete] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    const askDelete = (p: Product) => {
+        setProductToDelete(p);
+        setOpenDelete(true);
+    };
+    const confirmDelete = async () => {
+        if (!productToDelete) return;
+        try {
+            setSubmitting(true);
+            if (onDelete) {
+                // hormati handler eksternal jika disediakan
+                await onDelete(productToDelete);
+            } else {
+                // default hapus via Inertia
+                await new Promise<void>((resolve) => {
+                    router.delete(`/products/${productToDelete.id}`, {
+                        preserveScroll: true,
+                        onFinish: () => resolve(),
+                    });
+                });
+            }
+            setOpenDelete(false);
+            setProductToDelete(null);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <div className={`space-y-6 ${className}`}>
+            {/* Filter Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                        <Search className="h-5 w-5" />
+                        Filter & Pencarian
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="space-y-2">
+                            <Label htmlFor="search">Cari Produk</Label>
+                            <Input
+                                id="search"
+                                placeholder="Cari nama atau kode produk..."
+                                value={filter.search}
+                                onChange={(e) => handleFilterChange('search', e.target.value)}
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="type">Tipe Produk</Label>
+                            <Select value={filter.type} onValueChange={(value) => handleFilterChange('type', value)}>
+                                <SelectTrigger id="type">
+                                    <SelectValue placeholder="Pilih tipe" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Tipe</SelectItem>
+                                    {options.types.map((type) => (
+                                        <SelectItem key={type} value={type}>
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="warehouse">Kode Gudang</Label>
+                            <Select value={filter.kode_gudang} onValueChange={(value) => handleFilterChange('kode_gudang', value)}>
+                                <SelectTrigger id="warehouse">
+                                    <SelectValue placeholder="Pilih gudang" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Gudang</SelectItem>
+                                    {options.warehouses.map((warehouse) => (
+                                        <SelectItem key={warehouse} value={warehouse}>
+                                            Gudang {warehouse}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Table Section */}
+            <Card>
+                <CardHeader className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <CardTitle className="flex items-center gap-2">
+                            <Package className="h-5 w-5" />
+                            Daftar Produk
+                        </CardTitle>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Menampilkan {source.length} dari {products?.total ?? source.length} produk
+                        </p>
+                    </div>
+                    {showActions && (
+                        <Button className="gap-2" onClick={() => router.visit('/product/create')}>
+                            <Plus className="h-4 w-4" />
+                            Tambah Produk
+                        </Button>
+                    )}
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Kode</TableHead>
+                                    <TableHead>Nama Produk</TableHead>
+                                    <TableHead>Deskripsi</TableHead>
+                                    <TableHead>Tipe</TableHead>
+                                    <TableHead className="text-left">Harga</TableHead>
+                                    <TableHead className="text-center">Stok</TableHead>
+                                    <TableHead>Gudang</TableHead>
+                                    {showActions && <TableHead className="text-center">Aksi</TableHead>}
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {source.length > 0 ? (
+                                    source.map((product) => (
+                                        <TableRow key={product.id} className="group">
+                                            <TableCell className="font-medium">{product.code}</TableCell>
+                                            <TableCell className="font-medium">{product.name}</TableCell>
+                                            <TableCell className="max-w-xs truncate text-muted-foreground">{product.description || '-'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={getTypeBadgeVariant(product.type)}>
+                                                    {product.type.charAt(0).toUpperCase() + product.type.slice(1)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-left font-medium">{formatRupiah(product.price, false)}</TableCell>
+                                            <TableCell className="text-center">
+                                                {product.type === 'jual' ? (
+                                                    <Badge variant={getStockBadgeVariant(product.stock)}>{product.stock}</Badge>
+                                                ) : (
+                                                    <span className="text-muted-foreground">-</span>
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="rounded bg-muted px-2 py-1 font-mono text-xs">{product.kode_gudang}</span>
+                                            </TableCell>
+                                            {showActions && (
+                                                <TableCell className="text-center">
+                                                    <div className="flex items-center justify-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+                                                        {/* {onView && (
+                                                            <Button variant="ghost" size="sm" onClick={() => onView(product)} className="h-8 w-8 p-0">
+                                                                <Eye className="h-4 w-4" />
+                                                            </Button>
+                                                        )} */}
+                                                        {onEdit && (
+                                                            <Button variant="ghost" size="sm" onClick={() => onEdit(product)} className="h-8 w-8 p-0">
+                                                                <Edit className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        {/* Pakai ConfirmDeleteDialog */}
+                                                        <DeleteProduct
+                                                            trigger={
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            }
+                                                            title="Hapus Produk?"
+                                                            description={`Anda akan menghapus produk "${product.name}" (${product.code}). Tindakan ini tidak dapat dibatalkan.`}
+                                                            confirmText="Ya, Hapus"
+                                                            cancelText="Batal"
+                                                            onConfirm={async () => {
+                                                                // default hapus via Inertia
+                                                                await new Promise<void>((resolve) => {
+                                                                    router.delete(`/product/${product.id}`, {
+                                                                        preserveScroll: true,
+                                                                        onFinish: () => resolve(),
+                                                                    });
+                                                                });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={showActions ? 8 : 7} className="h-24 text-center">
+                                            {products.total === 0 ? 'Belum ada produk tersedia' : 'Tidak ada produk yang sesuai dengan filter'}
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Pagination links={products.links || []} />
+        </div>
+    );
+}

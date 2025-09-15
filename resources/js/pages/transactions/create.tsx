@@ -15,13 +15,17 @@ import AppLayout from '@/layouts/app-layout';
 import { formatPercent, formatRupiah } from '@/lib/formatRupiah';
 import { type BreadcrumbItem } from '@/types';
 import type { Customer, Item, Product, User } from '@/types/types';
-import { Head, usePage } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { Head, router, usePage } from '@inertiajs/react';
+import { Save, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Transactions',
-        href: 'transactions.create',
+        href: '/transactions',
+    },
+    {
+        title: 'Create',
+        href: '',
     },
 ];
 export default function TransactionsCreate() {
@@ -221,16 +225,18 @@ export default function TransactionsCreate() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const transactionData = prepareTransactionData();
-        console.log('Data transaksi yang akan dikirim:', transactionData);
-        // router.post('/transactions', transactionData, {
-        //     onSuccess: () => {
-        //         // console.log('Transaksi berhasil disimpan');
-        //         setConfirmOpen(false);
-        //     },
-        //     onError: (errors) => {
-        //         // console.error('Terjadi kesalahan:', errors);
-        //     },
-        // });
+        // console.log('Data transaksi yang akan dikirim:', transactionData);
+        router.post('/transactions', transactionData, {
+            onSuccess: () => {
+                setConfirmOpen(false);
+            },
+            onError: (errors) => {
+                addToast({
+                    message: 'Gagal menyimpan transaksi. Periksa kembali data yang dimasukkan.',
+                    type: 'error',
+                });
+            },
+        });
     };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -555,7 +561,10 @@ export default function TransactionsCreate() {
                     </div>
                     <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                         <DialogTrigger asChild>
-                            <Button type="button">Simpan Transaksi</Button>
+                            <Button type="button">
+                                <Save />
+                                Simpan Transaksi
+                            </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>

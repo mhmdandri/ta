@@ -1,12 +1,31 @@
 import AppLayout from '@/layouts/app-layout';
-import { formatCurrency } from '@/lib/utils';
-import { type BreadcrumbItem, type Summary, type Transaction } from '@/types';
-import { Head, Link } from '@inertiajs/react';
-import { DollarSign, Eye, Filter, TrendingUp, Users } from 'lucide-react';
+import { formatRupiah } from '@/lib/formatRupiah';
+import { type BreadcrumbItem } from '@/types';
+import { type Paginator, type Summary, type Transaction } from '@/types/types';
+import { Head } from '@inertiajs/react';
+import { DollarSign, Download, Eye, Filter, Package, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
 
+// Import shadcn/ui components
+import Pagination from '@/components/Pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 interface Props {
-    transactions: Transaction[];
+    transactions: Paginator<Transaction> & {
+        links: { url: string | null; label: string; active: boolean }[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        from: number;
+        to: number;
+    };
     summary: Summary;
 }
 
@@ -19,23 +38,27 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function RekapCorIndex({ transactions, summary }: Props) {
     const [filter, setFilter] = useState({
-        status: '',
+        status: 'all',
         customer: '',
-        sales: '',
+        sales: 'all',
     });
 
     // Filter transactions based on current filter state
-    const filteredTransactions = transactions.filter((transaction) => {
-        if (filter.status && transaction.status !== filter.status) return false;
-        if (filter.customer && !transaction.customer_name.toLowerCase().includes(filter.customer.toLowerCase())) return false;
-        if (filter.sales && !transaction.sales_name.toLowerCase().includes(filter.sales.toLowerCase())) return false;
+    const filteredTransactions = transactions.data.filter((transaction) => {
+        if (filter.status !== 'all' && transaction.transaction_type !== filter.status) return false;
+        if (filter.customer && !transaction.customer?.name.toLowerCase().includes(filter.customer.toLowerCase())) return false;
+        if (filter.sales !== 'all' && !transaction.sales?.name.toLowerCase().includes(filter.sales.toLowerCase())) return false;
         return true;
     });
 
     // Get unique values for filter options
-    const uniqueStatuses = [...new Set(transactions.map((t) => t.status))];
-    const uniqueCustomers = [...new Set(transactions.map((t) => t.customer_name))].filter((name) => name !== 'N/A');
-    const uniqueSales = [...new Set(transactions.map((t) => t.sales_name))].filter((name) => name !== 'N/A');
+    const uniqueStatuses = [...new Set(transactions.data.map((t) => t.transaction_type))].filter(Boolean);
+    const uniqueCustomers = [...new Set(transactions.data.map((t) => t.customer?.name))].filter((name) => name && name !== 'N/A');
+    const uniqueSales = [...new Set(transactions.data.map((t) => t.sales?.name))].filter((name) => name && name !== 'N/A');
+
+    const handleFilterChange = (key: string, value: string) => {
+        setFilter((prev) => ({ ...prev, [key]: value }));
+    };
 
     return (
         <AppLayout
@@ -46,198 +69,196 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
         >
             <Head title="Rekap COR" />
             <div className="space-y-6 p-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold text-gray-900">Rekap COR</h1>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Rekap COR</h1>
+                        <p className="mt-1 text-muted-foreground">Ringkasan dan daftar transaksi Change Order Request</p>
+                    </div>
+                    <Button className="gap-2">
+                        <Download className="h-4 w-4" />
+                        Export Excel
+                    </Button>
                 </div>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-lg bg-white p-6 shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Transaksi</p>
-                                <p className="text-2xl font-bold text-gray-900">{summary.total_transactions}</p>
-                            </div>
-                            <div className="rounded-full bg-blue-100 p-3">
-                                <TrendingUp className="h-6 w-6 text-blue-600" />
-                            </div>
-                        </div>
-                    </div>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
+                            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{summary.total_transactions}</div>
+                            <p className="text-xs text-muted-foreground">Seluruh transaksi COR</p>
+                        </CardContent>
+                    </Card>
 
-                    <div className="rounded-lg bg-white p-6 shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Customer</p>
-                                <p className="text-2xl font-bold text-gray-900">{summary.total_customers}</p>
-                            </div>
-                            <div className="rounded-full bg-green-100 p-3">
-                                <Users className="h-6 w-6 text-green-600" />
-                            </div>
-                        </div>
-                    </div>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Customer</CardTitle>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{summary.total_customers}</div>
+                            <p className="text-xs text-muted-foreground">Customer terlibat</p>
+                        </CardContent>
+                    </Card>
 
-                    {/* <div className="rounded-lg bg-white p-6 shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Qty</p>
-                                <p className="text-2xl font-bold text-gray-900">{summary.total_qty.toLocaleString()}</p>
-                            </div>
-                            <div className="rounded-full bg-orange-100 p-3">
-                                <Package className="h-6 w-6 text-orange-600" />
-                            </div>
-                        </div>
-                    </div> */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Qty</CardTitle>
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{summary.total_qty.toLocaleString()}</div>
+                            <p className="text-xs text-muted-foreground">Kuantitas barang</p>
+                        </CardContent>
+                    </Card>
 
-                    <div className="rounded-lg bg-white p-6 shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-gray-600">Total Nilai (NetNet)</p>
-                                <p className="text-2xl font-bold text-gray-900">{formatCurrency(summary.total_value)}</p>
-                            </div>
-                            <div className="rounded-full bg-purple-100 p-3">
-                                <DollarSign className="h-6 w-6 text-purple-600" />
-                            </div>
-                        </div>
-                    </div>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Nilai (NetNet)</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatRupiah(summary.total_value)}</div>
+                            <p className="text-xs text-muted-foreground">Nilai transaksi</p>
+                        </CardContent>
+                    </Card>
                 </div>
 
                 {/* Filter Section */}
-                <div className="rounded-lg bg-white p-4 shadow">
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <Filter className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-700">Filter:</span>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Filter className="h-5 w-5" />
+                            Filter Data
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="customer">Customer</Label>
+                                <Input
+                                    id="customer"
+                                    placeholder="Cari customer..."
+                                    value={filter.customer}
+                                    onChange={(e) => handleFilterChange('customer', e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="sales">Sales</Label>
+                                <Select value={filter.sales} onValueChange={(value) => handleFilterChange('sales', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih sales" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Sales</SelectItem>
+                                        {uniqueSales.map((sales) => (
+                                            <SelectItem key={sales} value={sales || 'unknown'}>
+                                                {sales}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="status">Status</Label>
+                                <Select value={filter.status} onValueChange={(value) => handleFilterChange('status', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Semua Status</SelectItem>
+                                        {uniqueStatuses.map((status) => (
+                                            <SelectItem key={status} value={status || 'unknown'}>
+                                                {status}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-
-                        <select
-                            value={filter.status}
-                            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="">Semua Status</option>
-                            {uniqueStatuses.map((status) => (
-                                <option key={status} value={status}>
-                                    {status}
-                                </option>
-                            ))}
-                        </select>
-
-                        <input
-                            type="text"
-                            placeholder="Cari Customer..."
-                            value={filter.customer}
-                            onChange={(e) => setFilter({ ...filter, customer: e.target.value })}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                        />
-
-                        <input
-                            type="text"
-                            placeholder="Cari Sales..."
-                            value={filter.sales}
-                            onChange={(e) => setFilter({ ...filter, sales: e.target.value })}
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-                        />
-
-                        {(filter.status || filter.customer || filter.sales) && (
-                            <button
-                                onClick={() => setFilter({ status: '', customer: '', sales: '' })}
-                                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
-                            >
-                                Reset Filter
-                            </button>
-                        )}
-                    </div>
-                </div>
+                    </CardContent>
+                </Card>
 
                 {/* Main Table */}
-                <div className="rounded-lg bg-white shadow">
-                    <div className="border-b border-gray-200 px-6 py-4">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold text-gray-900">Daftar Transaksi COR</h2>
-                            <p className="text-sm text-gray-600">
-                                Menampilkan {filteredTransactions.length} dari {transactions.length} transaksi
+                <Card>
+                    <CardHeader className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <CardTitle>Daftar Transaksi COR</CardTitle>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                Menampilkan {transactions.from} dari {transactions.to} transaksi
                             </p>
                         </div>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">No</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">NO. COR</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Nama Customer</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Status COR/COS</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Sales</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">Divisi</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">Qty</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
-                                        Total Price List
-                                    </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">NET PRICE</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">PPN 11%</th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">SUB TOTAL</th>
-                                    <th className="px-6 py-3 text-center text-xs font-medium tracking-wider text-gray-500 uppercase">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 bg-white">
-                                {filteredTransactions.map((transaction, index) => (
-                                    <tr key={transaction.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">{index + 1}</td>
-                                        <td className="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">{transaction.no_cor}</td>
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">{transaction.customer_name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span
-                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                                                    transaction.status === 'COR'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : transaction.status === 'COS'
-                                                          ? 'bg-green-100 text-green-800'
-                                                          : 'bg-gray-100 text-gray-800'
-                                                }`}
-                                            >
-                                                {transaction.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">{transaction.sales_name}</td>
-                                        <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900">{transaction.divisi}</td>
-                                        <td className="px-6 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {transaction.total_qty.toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {formatCurrency(transaction.total_pricelist)}
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {formatCurrency(transaction.total_net)}
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {formatCurrency(transaction.ppn_value)}
-                                        </td>
-                                        <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap text-gray-900">
-                                            {formatCurrency(transaction.total_final)}
-                                        </td>
-                                        <td className="px-6 py-4 text-center whitespace-nowrap">
-                                            <Link
-                                                href={`/report/rekap/cor/${transaction.id}`}
-                                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                                Detail
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {filteredTransactions.length === 0 && (
-                        <div className="py-12 text-center">
-                            <p className="text-gray-500">
-                                {transactions.length === 0 ? 'Tidak ada data transaksi' : 'Tidak ada data yang sesuai dengan filter'}
-                            </p>
+                        <Badge variant="outline" className="text-sm">
+                            Total: {formatRupiah(filteredTransactions.reduce((sum, t) => sum + t.total_final, 0))}
+                        </Badge>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>No</TableHead>
+                                        <TableHead>NO. COR</TableHead>
+                                        <TableHead>Nama Customer</TableHead>
+                                        <TableHead>Sales</TableHead>
+                                        <TableHead className="text-right">Qty</TableHead>
+                                        <TableHead className="text-right">Total Price List</TableHead>
+                                        <TableHead className="text-right">NET PRICE</TableHead>
+                                        <TableHead className="text-right">PPN 11%</TableHead>
+                                        <TableHead className="text-right">SUB TOTAL</TableHead>
+                                        <TableHead className="text-center">Action</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredTransactions.length > 0 ? (
+                                        filteredTransactions.map((transaction, index) => (
+                                            <TableRow key={transaction.id} className="group">
+                                                <TableCell className="font-medium">
+                                                    {(transactions.current_page - 1) * transactions.per_page + index + 1}
+                                                </TableCell>
+                                                <TableCell className="font-medium">{transaction.no_penawaran}</TableCell>
+                                                <TableCell>{transaction.customer?.name || 'N/A'}</TableCell>
+                                                <TableCell>{transaction.sales?.name || 'N/A'}</TableCell>
+                                                <TableCell className="text-right">{transaction.total_qty.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.total_pricelist)}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.total_net)}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.ppn_value)}</TableCell>
+                                                <TableCell className="text-right font-medium">{formatRupiah(transaction.total_final)}</TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        asChild
+                                                        className="gap-2 opacity-70 transition-opacity group-hover:opacity-100"
+                                                    >
+                                                        <a href={`/report/rekap/cor/${transaction.id}`}>
+                                                            <Eye className="h-4 w-4" />
+                                                            Detail
+                                                        </a>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={10} className="h-24 text-center">
+                                                {transactions.data.length === 0
+                                                    ? 'Tidak ada data transaksi'
+                                                    : 'Tidak ada data yang sesuai dengan filter'}
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
-                    )}
-                </div>
+                    </CardContent>
+                </Card>
+                <Pagination links={transactions.links} />
             </div>
         </AppLayout>
     );

@@ -41,37 +41,3 @@ export interface User {
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...
 }
-
-export interface Transaction {
-    id: number;
-    no_cor: string;
-    customer_name: string;
-    sales_name: string;
-    status: string;
-    kode_gudang: string;
-    divisi: string;
-    total_qty: number;
-    total_pricelist: number;
-    total_net: number;
-    total_net_net: number;
-    ppn_value: number;
-    total_final: number;
-    extra_discount: number;
-    operate_fee: number;
-    rental_start: string;
-    rental_end: string;
-    install_date: string;
-    uninstall_date: string;
-    pic: string;
-    location: string | null;
-    total_discount: number;
-    created_at: string;
-    items: any[];
-}
-
-export interface Summary {
-    total_transactions: number;
-    total_customers: number;
-    total_value: number;
-    total_qty: number;
-}

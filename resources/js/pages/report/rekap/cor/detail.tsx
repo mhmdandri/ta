@@ -1,22 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { formatOnlyDate, formatOnlyTime } from '@/lib/formatDateSafe';
 import { formatRupiah } from '@/lib/formatRupiah';
-import { type Transaction } from '@/types';
+import { type Transaction } from '@/types/types';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Calendar, FileText, Package, User } from 'lucide-react';
-
-interface TransactionItem {
-    product_name: string;
-    product_type: string;
-    qty: number;
-    unit: string;
-    price_pricelist: number;
-    price_deal: number;
-    discount: number;
-    kode_gudang: string;
-    discount_percent: number;
-    net_net: number;
-}
+import { ArrowLeft, Calendar, Package, User } from 'lucide-react';
 
 interface Props {
     transaction: Transaction;
@@ -26,23 +13,34 @@ export default function RekapCorDetail({ transaction }: Props) {
     // Calculate totals by product type
     const itemsByType = transaction.items.reduce(
         (acc, item) => {
-            const type = item.product_type;
+            const type = item.product?.type;
             if (!acc[type]) {
                 acc[type] = [];
             }
             acc[type].push(item);
             return acc;
         },
-        {} as Record<string, TransactionItem[]>,
+        {} as Record<string, Transaction['items']>,
     );
     const calculateNetNetByWarehouse = (kodeGudang: string) => {
-        return transaction.items.filter((item) => item.kode_gudang === kodeGudang).reduce((total, item) => total + (item.net_net || 0), 0);
+        return transaction.items.filter((item) => item.product?.kode_gudang === kodeGudang).reduce((total, item) => total + (item.net_net || 0), 0);
     };
 
     // Hitung total untuk setiap gudang
-    //const totalNetNetGudang01 = calculateNetNetByWarehouse('01'); // KMJ
+    const totalNetNetGudang01 = calculateNetNetByWarehouse('01'); // KMJ
     const totalNetNetGudang02 = calculateNetNetByWarehouse('02'); // Cabang
     const totalNetNetGudang04 = calculateNetNetByWarehouse('04'); // OS
+    let termin = 0;
+    const duration = transaction.termin_of_payment || 0;
+    if (duration == 'cash') {
+        termin = 0;
+    } else if (duration == '7hari') {
+        termin = 7;
+    } else if (duration == '15hari') {
+        termin = 14;
+    } else {
+        termin = 30;
+    }
 
     function addDays(date: Date | string, days: number) {
         const d = new Date(date);
@@ -57,7 +55,7 @@ export default function RekapCorDetail({ transaction }: Props) {
                 { title: 'Detail', href: '' },
             ]}
         >
-            <Head title={`Detail COR - ${transaction.no_cor}`} />
+            <Head title={`Detail COR - ${transaction.no_penawaran}`} />
             <div className="space-y-6 p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -68,17 +66,7 @@ export default function RekapCorDetail({ transaction }: Props) {
                             <ArrowLeft className="h-4 w-4" />
                             Kembali
                         </Link>
-                        <h1 className="text-2xl font-bold text-gray-900">Detail Rekap COR - {transaction.no_cor}</h1>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                            <FileText className="h-4 w-4" />
-                            Print
-                        </button>
-                        <button className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-                            <FileText className="h-4 w-4" />
-                            Export
-                        </button>
+                        <h1 className="text-2xl font-bold text-gray-900">Detail Rekap COR - {transaction.no_penawaran}</h1>
                     </div>
                 </div>
 
@@ -92,29 +80,15 @@ export default function RekapCorDetail({ transaction }: Props) {
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">NO. COR:</span>
-                                <span className="font-medium">{transaction.no_cor}</span>
+                                <span className="font-medium">{transaction.no_penawaran}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Customer:</span>
-                                <span className="font-medium">{transaction.customer_name}</span>
+                                <span className="font-medium">{transaction.customer?.name}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Sales:</span>
-                                <span className="font-medium">{transaction.sales_name}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Status:</span>
-                                <span
-                                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                                        transaction.status === 'COR' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                                    }`}
-                                >
-                                    {transaction.status}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Divisi:</span>
-                                <span className="font-medium">{transaction.divisi}</span>
+                                <span className="font-medium">{transaction.sales?.name}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">PIC:</span>
@@ -194,28 +168,36 @@ export default function RekapCorDetail({ transaction }: Props) {
                                 {transaction.items.map((item, index) => (
                                     <tr key={index} className="hover:bg-gray-50">
                                         {/* <td className="px-4 py-4 text-sm whitespace-nowrap text-gray-900">{index + 1}</td> */}
-                                        <td className="px-4 py-4 text-sm text-gray-900">{item.product_name}</td>
-                                        <td className="px-4 py-4 text-center text-sm text-gray-900">{item.kode_gudang === '01' ? '✓' : '-'}</td>
-                                        <td className="px-4 py-4 text-center text-sm text-gray-900">{item.kode_gudang === '02' ? '✓' : '-'}</td>
-                                        <td className="px-4 py-4 text-center text-sm text-gray-900">{item.kode_gudang === '04' ? '✓' : '-'}</td>
+                                        <td className="px-4 py-4 text-sm text-gray-900">{item.product?.name}</td>
+                                        <td className="px-4 py-4 text-center text-sm text-gray-900">
+                                            {item.product?.kode_gudang === '01' ? '✓' : '-'}
+                                        </td>
+                                        <td className="px-4 py-4 text-center text-sm text-gray-900">
+                                            {item.product?.kode_gudang === '02' ? '✓' : '-'}
+                                        </td>
+                                        <td className="px-4 py-4 text-center text-sm text-gray-900">
+                                            {item.product?.kode_gudang === '04' ? '✓' : '-'}
+                                        </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">{item.qty.toLocaleString()}</td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.product_type == 'jasa' ? '0' : formatRupiah(item.price_pricelist)}
+                                            {item.product?.type == 'jasa' ? '0' : formatRupiah(item.price_pricelist, false)}
                                         </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.product_type == 'jasa' ? 0 : formatRupiah(item.price_deal)}
+                                            {formatRupiah(item.price_deal, false)}
                                         </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.kode_gudang === '02' ? formatRupiah(item.net_net) : '-'}
+                                            {item.product?.kode_gudang === '02' ? formatRupiah(item.net_net, false) : '-'}
                                         </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.kode_gudang === '04' ? formatRupiah(item.net_net) : '-'}
+                                            {item.product?.kode_gudang === '04' ? formatRupiah(item.net_net, false) : '-'}
                                         </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.product_type == 'jasa' ? 0 : formatRupiah(item.net_net)}
+                                            {item.product?.type == 'jasa' ? 0 : formatRupiah(item.net_net, false)}
                                         </td>
                                         <td className="px-4 py-4 text-right text-sm whitespace-nowrap text-gray-900">
-                                            {item.kode_gudang !== '04' ? formatRupiah(item.net_net) : '-'}
+                                            {item.product?.kode_gudang !== '04' && item.product?.type !== 'jasa'
+                                                ? formatRupiah(item.net_net, false)
+                                                : '-'}
                                         </td>
                                     </tr>
                                 ))}
@@ -240,7 +222,7 @@ export default function RekapCorDetail({ transaction }: Props) {
                                         {totalNetNetGudang04 > 0 ? formatRupiah(totalNetNetGudang04, false) : '-'}
                                     </th>
                                     <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">
-                                        {formatRupiah(transaction.total_net_net)}
+                                        {formatRupiah(transaction.total_net_net, false)}
                                     </th>
                                     <th className="px-4 py-3 text-right text-sm font-medium text-gray-900">
                                         {formatRupiah(transaction.total_net_net - totalNetNetGudang04, false)}
@@ -362,7 +344,9 @@ export default function RekapCorDetail({ transaction }: Props) {
                     <div className="mt-6 border-t pt-4">
                         <div className="flex justify-between">
                             <span className="text-gray-600">Tanggal Invoicing:</span>
-                            <span className="font-medium">{formatOnlyDate(addDays(transaction.rental_end, 7))}</span>
+                            <span className="font-medium">
+                                {transaction.rental_end ? formatOnlyDate(addDays(transaction.rental_end, termin)) : '-'}
+                            </span>
                         </div>
                     </div>
                 </div>

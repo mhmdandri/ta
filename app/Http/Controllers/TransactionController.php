@@ -21,7 +21,6 @@ class TransactionController extends Controller
     public function index()
     {
         $transactions = Transaction::with(['customer', 'sales', 'items.product'])->latest()->paginate(10);
-        // Hitung total transaksi
         return Inertia::render('transactions/index', [
             'transactions' => $transactions,
         ]);
@@ -39,22 +38,6 @@ class TransactionController extends Controller
             'users' => $user,
         ]);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    // private function getJasaOperatePrice($items = [])
-    // {
-    //     // buat kondisi jika ada item Jasa Operate di dalam items
-    //     foreach ($items as $item) {
-    //         $product = Product::find($item['product_id']);
-    //         if ($product && $product->type === 'jasa') {
-    //             return $item['net_net']; // Gunakan harga dari item transaksi
-    //         }
-    //     }
-    //     $jasaOperate = Product::where('name', 'Jasa Operate')->first();
-    //     return $jasaOperate ? $jasaOperate->price : 0;
-    // }
     private function getAllServicePrices($items = [])
     {
         $services = [
@@ -81,25 +64,6 @@ class TransactionController extends Controller
         }
 
         return $services;
-    }
-    private function applyWarehouseLogic($items = [])
-    {
-        $processedItems = [];
-
-        foreach ($items as $item) {
-            $product = Product::find($item['product_id']);
-            $processedItem = $item; // copy original item
-
-            if ($product && $product->kode_gudang === '02') {
-                // Jika gudang 02, net_net = 30% dari net_price
-                $processedItem['net_net'] = $item['net_price'] * 0.70;
-            }
-            // Jika gudang lain (default), gunakan net_net original dari input
-
-            $processedItems[] = $processedItem;
-        }
-
-        return $processedItems;
     }
 
     public function store(Request $request, OfferNumberGenerator $gen)
@@ -140,9 +104,6 @@ class TransactionController extends Controller
             'items.*.net_price' => 'required|numeric|min:0',
             'items.*.net_net' => 'required|numeric|min:0',
         ]);
-        //$kode = $this->getProductWh($processedItems);
-        //dd(['warehouses' => $kode, 'processed_items' => $processedItems]);
-        // 2) Normalisasi tanggal -> format MySQL + timezone app
         $tz = config('app.timezone');
         $rentalStart = Carbon::parse($validated['rental_start'])->timezone($tz)->format('Y-m-d H:i:s');
         $rentalEnd   = Carbon::parse($validated['rental_end'])->timezone($tz)->format('Y-m-d H:i:s');

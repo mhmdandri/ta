@@ -8,11 +8,18 @@ export type Product = {
     price: number;
     stock: number;
     kode_gudang: string;
+    price_list?: Pricelist;
 };
 
 export type Pricelist = {
     id: number;
     product_id: number;
+    price_1_day: number;
+    price_3_days: number;
+    price_5_days: number;
+    price_7_days: number;
+    price_10_days: number;
+    price_30_days: number;
 };
 
 export type User = {
@@ -73,6 +80,7 @@ export type Transaction = {
     items: TransactionItem[];
     customer?: Customer;
     sales?: User;
+    total_qty: number;
 };
 
 export type Link = {
@@ -95,4 +103,38 @@ export type Item = {
     netPrice: number;
     netNet: number;
     pricelist: number;
+};
+
+export type Summary = {
+    total_transactions: number;
+    total_customers: number;
+    total_value: number;
+    total_qty: number;
+};
+export type LinkType = { url: string | null; label: string; active: boolean };
+export type Paginator<T> = {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    links?: LinkType[];
+    meta?: { links?: LinkType[] };
+};
+
+export type FormDataProduk = {
+    name: string;
+    code: string;
+    description: string;
+    type: string;
+    kode_gudang: string;
+    stock: number;
+    price_1_day: number;
+    price_3_days: number;
+    price_5_days: number;
+    price_10_days: number;
+    price_7_days: number;
+    price_30_days: number;
 };

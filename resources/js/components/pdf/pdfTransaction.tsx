@@ -4,12 +4,6 @@ import { terbilangID } from '@/lib/formatTerbilang';
 import type { Transaction } from '@/types/types';
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 
-// Register fonts (optional)
-// Font.register({
-//   family: 'Inter',
-//   src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2'
-// });
-
 const toStr = (v: unknown) => (v === 0 ? '0' : v == null ? '' : String(v));
 export const Txt: React.FC<{ children?: React.ReactNode }> = ({ children }) => <Text>{toStr(children as any)}</Text>;
 
@@ -177,6 +171,7 @@ interface PdfTransactionProps {
     transaction: Transaction & {
         customer?: { name: string; address?: string };
         sales?: { name: string };
+        product?: { kode_gudang?: string; name?: string; type?: string };
         items?: any[];
     };
 }
@@ -189,6 +184,11 @@ export default function PdfTransaction({ transaction }: PdfTransactionProps) {
     const items = transaction?.items ?? [];
     const subtotalNet = transaction?.total_net ?? items.reduce((acc: number, it: any) => acc + (it.net_price ?? it.price_deal ?? 0), 0);
     const discountPersen = (transaction.total_pricelist - transaction.total_net_net) / transaction.total_pricelist;
+    const calculateNetNetByWarehouse = (kodeGudang: string) => {
+        return transaction.items.filter((item) => item.product?.kode_gudang === kodeGudang).reduce((total, item) => total + (item.net_net || 0), 0);
+    };
+    const totalNetNetGudang04 = calculateNetNetByWarehouse('04'); // OS
+    const totalnetnetOS = transaction.total_net_net - totalNetNetGudang04;
     return (
         <Document>
             <Page size="A4" style={styles.page}>
@@ -366,11 +366,11 @@ export default function PdfTransaction({ transaction }: PdfTransactionProps) {
                             </View>
                             <View style={styles.summaryRow}>
                                 <Text>Barang OS</Text>
-                                <Text>-</Text>
+                                <Text>{formatRupiah(totalNetNetGudang04, false)}</Text>
                             </View>
                             <View style={styles.summaryRow}>
                                 <Text>Netnet-OS</Text>
-                                <Text>-</Text>
+                                <Text>{formatRupiah(totalnetnetOS, false)}</Text>
                             </View>
                         </View>
                     </View>
