@@ -191,6 +191,7 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $kodeGudang = $request->input('kode_gudang', $product->kode_gudang);
+        $allowedTypes = array_unique(array_merge(['sewa', 'jual', 'jasa']));
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'code' => [
@@ -203,7 +204,7 @@ class ProductController extends Controller
                     ->where(fn($q) => $q->where('kode_gudang', $kodeGudang)),
             ],
             'description' => 'nullable|string',
-            'type' => 'required|string|in:sewa,jual,jasa',
+            'type' => 'required|string|in:' . implode(',', $allowedTypes),
             'stock' => 'required|integer|min:0',
             'price_1_day' => 'required|numeric|min:0',
             'price_3_days' => 'nullable|numeric|min:0',

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PricelistController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Report\Rekap\CorRekapController;
@@ -22,6 +23,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('dashboard');
     })->name('dashboard');
 });
+
+// route customer
+Route::resource('customers', CustomerController::class)->middleware(['auth', 'verified']);
 
 // route product
 Route::resource('product', ProductController::class)->middleware(['auth', 'verified']);

@@ -7,7 +7,6 @@ import FormEditProduct from './components/form-edit-product';
 interface Props {
     product: Product;
 }
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Produk',
@@ -21,18 +20,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function ProductEdit({ product }: Props) {
     const handleSuccess = (updatedProduct: Product) => {
-        // Redirect ke halaman index setelah berhasil update produk
-        router.visit('/product', {
-            onSuccess: () => {
-                // Toast sudah ditampilkan di FormEditProduct
-            },
-        });
+        router.visit('/product');
     };
-
     const handleCancel = () => {
         router.visit('/product');
     };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit Produk - ${product.name}`} />

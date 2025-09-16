@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CustomerController extends Controller
 {
@@ -19,9 +20,24 @@ class CustomerController extends Controller
 
         return response()->json($customers);
     }
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $filters = [
+            'search' => $request->string('search')->toString()
+        ];
+        $query = Customer::query();
+        if ($filters['search']) {
+            $s = $filters['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                    ->orWhere('code', 'like', "%{$s}%");
+            });
+        }
+        $customers = $query->orderBy('name')->paginate(10)->withQueryString();
+        return Inertia::render('customers/index', [
+            'customers' => $customers,
+            'filters'   => $filters,
+        ]);
     }
 
     /**
@@ -29,7 +45,7 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        //
+        return Inertia::render('customers/create');
     }
 
     /**
@@ -37,7 +53,20 @@ class CustomerController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validatedData = $request->validate([
+            'name'    => 'required|string|max:255',
+            'code'    => 'required|string|max:50|unique:customers,code',
+            'address' => 'nullable|string|max:500',
+            'phone'   => 'required|string|max:20',
+            'npwp'    => 'nullable|string|max:20',
+            'email'   => 'nullable|email|max:100|unique:customers,email',
+        ]);
+        $cek = Customer::where('code', $validatedData['code'])->first();
+        if ($cek) {
+            return redirect()->back()->withErrors(['code' => 'Kode pelanggan sudah digunakan.'])->withInput();
+        }
+        Customer::create($validatedData);
+        return redirect()->route('customers.index')->with('success', 'Customer berhasil ditambahkan.');
     }
 
     /**
@@ -53,7 +82,9 @@ class CustomerController extends Controller
      */
     public function edit(Customer $customer)
     {
-        //
+        return Inertia::render('customers/edit', [
+            'customer' => $customer
+        ]);
     }
 
     /**
@@ -61,7 +92,16 @@ class CustomerController extends Controller
      */
     public function update(Request $request, Customer $customer)
     {
-        //
+        $validatedData = $request->validate([
+            'name'    => 'required|string|max:255',
+            'code'    => 'required|string|max:50|unique:customers,code,' . $customer->id,
+            'address' => 'nullable|string|max:500',
+            'phone'   => 'required|string|max:20',
+            'npwp'    => 'nullable|string|max:20',
+            'email'   => 'nullable|email|max:100|unique:customers,email,' . $customer->id,
+        ]);
+        $customer->update($validatedData);
+        return redirect()->route('customers.index')->with('success', 'Customer berhasil diperbarui.');
     }
 
     /**
@@ -69,6 +109,7 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
-        //
+        $customer->delete();
+        return redirect()->route('customers.index')->with('success', 'Customer berhasil dihapus.');
     }
 }

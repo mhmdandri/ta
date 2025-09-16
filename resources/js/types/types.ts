@@ -30,6 +30,11 @@ export type User = {
 export type Customer = {
     id: number;
     name: string;
+    code: string;
+    address: string;
+    phone: string;
+    email: string;
+    npwp: string;
 };
 
 export type TransactionItem = {

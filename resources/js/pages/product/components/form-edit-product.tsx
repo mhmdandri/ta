@@ -63,7 +63,7 @@ export default function FormEditProduct({ product, className = '', onSuccess, on
         name: '',
         code: '',
         description: '',
-        type: '',
+        type: product.type,
         stock: 0,
         price_1_day: 0,
         price_3_days: 0,

@@ -30,16 +30,12 @@ type TableProductProps = {
     className?: string;
     showActions?: boolean;
     onEdit?: (product: Product) => void;
-    onDelete?: (product: Product) => void;
-    onView?: (product: Product) => void;
 };
 
-export default function TableProduct({ className = '', showActions = true, onEdit, onDelete, onView }: TableProductProps) {
+export default function TableProduct({ className = '', showActions = true, onEdit }: TableProductProps) {
     const { products, filters, options } = usePage<PageProps>().props;
-
     // state lokal mirror dari filters server (untuk input controlled)
     const [filter, setFilter] = useState(filters);
-
     // Debounce untuk search
     const debounceRef = useRef<number | null>(null);
     const applyFilters = (next: typeof filter, replace = true) => {
@@ -57,12 +53,10 @@ export default function TableProduct({ className = '', showActions = true, onEdi
             },
         );
     };
-
     // sinkron ketika props filters dari server berubah (mis. pindah halaman)
     useEffect(() => {
         setFilter(filters);
     }, [filters.search, filters.type, filters.kode_gudang]);
-
     const handleFilterChange = (key: keyof typeof filter, value: string) => {
         const next = { ...filter, [key]: value };
         setFilter(next);
@@ -78,7 +72,6 @@ export default function TableProduct({ className = '', showActions = true, onEdi
             applyFilters(next, false);
         }
     };
-
     const getTypeBadgeVariant = (type: Product['type']) => {
         switch (type) {
             case 'jual':
@@ -91,44 +84,20 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                 return 'default';
         }
     };
-
     const getStockBadgeVariant = (stock: number) => {
         if (stock === 0) return 'destructive';
         if (stock <= 10) return 'outline';
         return 'default';
     };
     const source = products?.data ?? [];
-    const [openDelete, setOpenDelete] = useState(false);
-    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-
-    const askDelete = (p: Product) => {
-        setProductToDelete(p);
-        setOpenDelete(true);
+    const handleDelete = async (product: Product) => {
+        await new Promise<void>((resolve) => {
+            router.delete(`/product/${product.id}`, {
+                preserveScroll: true,
+                onFinish: () => resolve(),
+            });
+        });
     };
-    const confirmDelete = async () => {
-        if (!productToDelete) return;
-        try {
-            setSubmitting(true);
-            if (onDelete) {
-                // hormati handler eksternal jika disediakan
-                await onDelete(productToDelete);
-            } else {
-                // default hapus via Inertia
-                await new Promise<void>((resolve) => {
-                    router.delete(`/products/${productToDelete.id}`, {
-                        preserveScroll: true,
-                        onFinish: () => resolve(),
-                    });
-                });
-            }
-            setOpenDelete(false);
-            setProductToDelete(null);
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     return (
         <div className={`space-y-6 ${className}`}>
             {/* Filter Section */}
@@ -198,7 +167,7 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                             Daftar Produk
                         </CardTitle>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Menampilkan {source.length} dari {products?.total ?? source.length} produk
+                            Menampilkan {products?.from ?? 1} dari {products?.to ?? source.length} produk
                         </p>
                     </div>
                     {showActions && (
@@ -249,11 +218,6 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                                             {showActions && (
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
-                                                        {/* {onView && (
-                                                            <Button variant="ghost" size="sm" onClick={() => onView(product)} className="h-8 w-8 p-0">
-                                                                <Eye className="h-4 w-4" />
-                                                            </Button>
-                                                        )} */}
                                                         {onEdit && (
                                                             <Button variant="ghost" size="sm" onClick={() => onEdit(product)} className="h-8 w-8 p-0">
                                                                 <Edit className="h-4 w-4" />
@@ -274,15 +238,7 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                                                             description={`Anda akan menghapus produk "${product.name}" (${product.code}). Tindakan ini tidak dapat dibatalkan.`}
                                                             confirmText="Ya, Hapus"
                                                             cancelText="Batal"
-                                                            onConfirm={async () => {
-                                                                // default hapus via Inertia
-                                                                await new Promise<void>((resolve) => {
-                                                                    router.delete(`/product/${product.id}`, {
-                                                                        preserveScroll: true,
-                                                                        onFinish: () => resolve(),
-                                                                    });
-                                                                });
-                                                            }}
+                                                            onConfirm={() => handleDelete(product)}
                                                         />
                                                     </div>
                                                 </TableCell>
