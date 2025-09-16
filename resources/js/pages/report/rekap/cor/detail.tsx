@@ -25,6 +25,13 @@ export default function RekapCorDetail({ transaction }: Props) {
     const calculateNetNetByWarehouse = (kodeGudang: string) => {
         return transaction.items.filter((item) => item.product?.kode_gudang === kodeGudang).reduce((total, item) => total + (item.net_net || 0), 0);
     };
+    if (transaction.status == 'submitted') {
+        transaction.status = 'Submitted';
+    } else if (transaction.status == 'completed') {
+        transaction.status = 'Completed';
+    } else if (transaction.status == 'cancelled') {
+        transaction.status = 'Cancelled';
+    }
 
     // Hitung total untuk setiap gudang
     const totalNetNetGudang01 = calculateNetNetByWarehouse('01'); // KMJ
@@ -89,6 +96,10 @@ export default function RekapCorDetail({ transaction }: Props) {
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Sales:</span>
                                 <span className="font-medium">{transaction.sales?.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">Status:</span>
+                                <span className="font-medium">{transaction.status || '-'}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">PIC:</span>

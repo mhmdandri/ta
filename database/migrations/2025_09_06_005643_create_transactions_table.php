@@ -40,6 +40,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('pic')->nullable();
             $table->integer('rental_duration')->default(0);
+            $table->enum('status', ['submitted', 'completed', 'cancelled'])->default('submitted');
             $table->timestamps();
         });
     }

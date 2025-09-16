@@ -17,12 +17,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function ProductCreate() {
     const handleSuccess = (product: Product) => {
-        // Redirect ke halaman index setelah berhasil menambah produk
-        router.visit('/product', {
-            onSuccess: () => {
-                // Toast sudah ditampilkan di FormAddProduct
-            },
-        });
+        router.visit('/product');
     };
 
     const handleCancel = () => {

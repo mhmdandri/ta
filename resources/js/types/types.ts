@@ -80,6 +80,7 @@ export type Transaction = {
     description: string | null;
     rental_duration?: number;
     pic: string;
+    status: string;
     created_at: string;
     updated_at: string;
     items: TransactionItem[];

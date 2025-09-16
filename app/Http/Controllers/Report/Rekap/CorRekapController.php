@@ -70,6 +70,7 @@ class CorRekapController extends Controller
                     'created_at' => $transaction->created_at->toISOString(),
                     'updated_at' => $transaction->updated_at->toISOString(),
                     'total_qty' => $transaction->items->sum('qty'),
+                    'status' => $transaction->status ?? '',
 
                     // Relations
                     'customer' => $transaction->customer ? [
@@ -114,7 +115,7 @@ class CorRekapController extends Controller
         $summary = [
             'total_transactions' => $allTransactions->count(),
             'total_customers' => $allTransactions->pluck('customer.name')->filter()->unique()->count(),
-            'total_value' => $allTransactions->sum('total_final'),
+            'total_value' => $allTransactions->sum('total_net_net'),
             'total_qty' => $allTransactions->sum(function ($transaction) {
                 return $transaction->items->sum('qty');
             }),
@@ -161,6 +162,7 @@ class CorRekapController extends Controller
             'created_at' => $transaction->created_at->toISOString(),
             'updated_at' => $transaction->updated_at->toISOString(),
             'total_qty' => $transaction->items->sum('qty'),
+            'status' => $transaction->status ?? '',
 
             // Relations - konsisten dengan types.ts
             'customer' => $transaction->customer ? [

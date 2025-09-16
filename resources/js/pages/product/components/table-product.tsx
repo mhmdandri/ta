@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatRupiah } from '@/lib/formatRupiah';
+import { SharedData } from '@/types';
 import { type Paginator, type Product } from '@/types/types';
 import { router, usePage } from '@inertiajs/react';
 import { Edit, Package, Plus, Search, Trash2 } from 'lucide-react';
@@ -34,6 +35,8 @@ type TableProductProps = {
 
 export default function TableProduct({ className = '', showActions = true, onEdit }: TableProductProps) {
     const { products, filters, options } = usePage<PageProps>().props;
+    const { auth } = usePage<SharedData>().props;
+    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager';
     // state lokal mirror dari filters server (untuk input controlled)
     const [filter, setFilter] = useState(filters);
     // Debounce untuk search
@@ -219,7 +222,13 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
                                                         {onEdit && (
-                                                            <Button variant="ghost" size="sm" onClick={() => onEdit(product)} className="h-8 w-8 p-0">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => onEdit(product)}
+                                                                className="h-8 w-8 p-0"
+                                                                disabled={!isAdminUp}
+                                                            >
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
                                                         )}
@@ -230,6 +239,7 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                    disabled={!isAdminUp}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>

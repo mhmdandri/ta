@@ -5,7 +5,6 @@ import { type Paginator, type Summary, type Transaction } from '@/types/types';
 import { Head } from '@inertiajs/react';
 import { DollarSign, Download, Eye, Filter, Package, TrendingUp, Users } from 'lucide-react';
 import { useState } from 'react';
-
 // Import shadcn/ui components
 import Pagination from '@/components/Pagination';
 import { Badge } from '@/components/ui/badge';
@@ -225,10 +224,12 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                                                 <TableCell>{transaction.customer?.name || 'N/A'}</TableCell>
                                                 <TableCell>{transaction.sales?.name || 'N/A'}</TableCell>
                                                 <TableCell className="text-right">{transaction.total_qty.toLocaleString()}</TableCell>
-                                                <TableCell className="text-right">{formatRupiah(transaction.total_pricelist)}</TableCell>
-                                                <TableCell className="text-right">{formatRupiah(transaction.total_net)}</TableCell>
-                                                <TableCell className="text-right">{formatRupiah(transaction.ppn_value)}</TableCell>
-                                                <TableCell className="text-right font-medium">{formatRupiah(transaction.total_final)}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.total_pricelist, false)}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.total_net, false)}</TableCell>
+                                                <TableCell className="text-right">{formatRupiah(transaction.ppn_value, false)}</TableCell>
+                                                <TableCell className="text-right font-medium">
+                                                    {formatRupiah(transaction.total_final, false)}
+                                                </TableCell>
                                                 <TableCell className="text-center">
                                                     <Button
                                                         variant="outline"

@@ -19,7 +19,7 @@ export function CustomerSelect({ value, onChange }: Props) {
     // Fetch customers setiap kali query berubah
     React.useEffect(() => {
         const timeout = setTimeout(() => {
-            fetch(`/customers/search?q=${encodeURIComponent(query)}`)
+            fetch(`/customer/search?q=${encodeURIComponent(query)}`)
                 .then((res) => res.json())
                 .then((data: Customer[]) => setCustomers(data))
                 .catch(() => setCustomers([]));

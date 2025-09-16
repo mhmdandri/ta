@@ -59,13 +59,13 @@ Route::get('/products/search', function (Request $request) {
         ->limit(10)
         ->get();
 });
-Route::get('/customers/search', function (Request $request) {
+Route::get('/customer/search', function (Request $request) {
     $q = $request->get('q', '');
     return Customer::where('name', 'like', "%{$q}%")
         ->orWhere('code', 'like', "%{$q}%")
         ->limit(10)
         ->get();
-});
+})->name('customer.search');
 Route::get('/users/search', function (Request $request) {
     $q = $request->get('q', '');
     return User::where('name', 'like', "%{$q}%")

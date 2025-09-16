@@ -5,12 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Routing\Controller as BaseController;
 
-class CustomerController extends Controller
+class CustomerController extends BaseController
 {
+    use AuthorizesRequests, ValidatesRequests;
     /**
      * Display a listing of the resource.
      */
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+
+        // Khusus action create & store hanya admin
+        $this->middleware(['role:admin|sales|manager'])->only(['create', 'store']);
+        // Kalau mau, update & delete juga dibatasi
+        $this->middleware(['role:admin|manager'])->only(['edit', 'update']);
+        $this->middleware(['role:admin|manager'])->only(['destroy']);
+    }
     public function search(Request $request)
     {
         $query = $request->get('q', '');

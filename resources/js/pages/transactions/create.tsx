@@ -486,10 +486,10 @@ export default function TransactionsCreate() {
                                                 <div>{formatPercent(item.discount_percent)}</div>
                                             </div>
                                         </td>
-                                        <td className="border p-2">{formatRupiah(item.netNet)}</td>
+                                        <td className="border p-2">{item.product?.type === 'jasa' ? 0 : formatRupiah(item.netNet)}</td>
                                         <td className="border p-2 text-center">
                                             <Button type="button" variant="destructive" size="sm" onClick={() => handleDeleteProduct(i)}>
-                                                <Trash2 className="h-4 w-4" />
+                                                <Trash2 className="h-4 w-4 text-white" />
                                             </Button>
                                         </td>
                                     </tr>

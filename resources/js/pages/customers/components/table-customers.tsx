@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SharedData } from '@/types';
 import { Customer, type Paginator } from '@/types/types';
 import { router, usePage } from '@inertiajs/react';
 import { Building, Edit, Plus, Search, Trash2 } from 'lucide-react';
@@ -24,6 +25,8 @@ type TableCustomerProps = {
 };
 
 export default function TableCustomers({ className = '', showActions = true, onEdit }: TableCustomerProps) {
+    const { auth } = usePage<SharedData>().props;
+    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager';
     const { customers, filters } = usePage<PageProps>().props;
     const source = customers?.data ?? [];
     const [filter, setFilter] = useState(filters);
@@ -142,6 +145,7 @@ export default function TableCustomers({ className = '', showActions = true, onE
                                                                 size="sm"
                                                                 onClick={() => onEdit(customer)}
                                                                 className="h-8 w-8 p-0"
+                                                                disabled={!isAdminUp}
                                                             >
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
@@ -153,6 +157,7 @@ export default function TableCustomers({ className = '', showActions = true, onE
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                    disabled={!isAdminUp}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>

@@ -159,6 +159,7 @@ class TransactionController extends Controller
                 'delivery' => $validated['delivery'] ?? null,
                 'description' => $validated['description'] ?? null,
                 'rental_duration' => $validated['rental_duration'],
+                'status' => 'submitted',
                 'pic' => $validated['pic'] ?? null,
                 'offer_counter_id' => $genRes['offer_counter_id'],   // pakai ini jika kamu simpan relasi counter
             ]);

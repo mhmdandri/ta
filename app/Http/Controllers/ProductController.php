@@ -6,9 +6,23 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Routing\Controller as BaseController;
 
-class ProductController extends Controller
+class ProductController extends BaseController
 {
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+
+        // Khusus action create & store hanya admin
+        $this->middleware(['role:admin|manager|sales'])->only(['create', 'store']);
+        // Kalau mau, update & delete juga dibatasi
+        $this->middleware(['role:admin|manager'])->only(['edit', 'update']);
+        $this->middleware(['role:admin|manager'])->only(['destroy']);
+    }
     private $warehouses = ['01', '02', '04'];
     public function search(Request $request)
     {
