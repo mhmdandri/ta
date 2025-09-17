@@ -1,24 +1,28 @@
+import DateRangePicker from '@/components/DateRangePicker';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { ArrowDownToLine, Filter, RefreshCw } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type DateRange } from 'react-day-picker';
 
 // Types --------------------------------------------------
 export type RevenueRow = {
-    id: number;
+    id: number | string;
     date: string; // ISO date
     no_ref: string; // e.g. no_penawaran / invoice
     customer: string;
     sales: string;
-    total_net: number; // subtotal
-    total_net_net: number; // grand total after discounts + tax
+    total_net: number; // subtotal (bisa harian jika multi-day)
+    total_net_net: number; // grand total (bisa harian jika multi-day)
+    rental_duration?: number; // durasi rental dari DB
+    is_daily_split?: boolean; // apakah ini hasil pembagian harian
+    original_total_net?: number; // total asli sebelum dibagi
+    original_total_net_net?: number; // total asli sebelum dibagi
+    rental_period?: string;
 };
 
 export type RevenueSummary = {
@@ -26,19 +30,15 @@ export type RevenueSummary = {
     total_net: number;
     total_net_net: number;
     avg_per_tx: number;
+    total_pricelist: number;
 };
 
 export type RevenueProps = {
     rows: RevenueRow[];
     summary: RevenueSummary;
-    // echo back current filter from server
     filter?: {
-        mode: FilterMode;
-        date?: string; // YYYY-MM-DD
         start?: string; // YYYY-MM-DD
         end?: string; // YYYY-MM-DD
-        week_start?: string; // YYYY-MM-DD (Monday)
-        month?: string; // YYYY-MM (for <input type="month">)
     };
 };
 
@@ -58,102 +58,116 @@ function formatDateID(iso: string) {
 }
 
 // Filter UI ----------------------------------------------
-const MODES = [
-    { value: 'harian', label: 'Harian' },
-    { value: 'range', label: 'Range Tanggal' },
-    { value: 'mingguan', label: 'Mingguan' },
-    { value: 'bulanan', label: 'Bulanan' },
-] as const;
-
-type FilterMode = (typeof MODES)[number]['value'];
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Laporan',
+        href: '/report',
+    },
+    {
+        title: 'Pendapatan COR',
+        href: '/report/revenue',
+    },
+];
 
 export default function RevenueReport() {
     const { rows = [], summary, filter } = usePage<RevenueProps>().props;
     console.log('props:', usePage<RevenueProps>().props);
-    // local filter state; hydrate from server echo
-    // const [mode, setMode] = useState<FilterMode>(filter?.mode ?? 'harian');
-    const [date, setDate] = useState<string>(filter?.date ?? new Date().toISOString().slice(0, 10));
-    const [start, setStart] = useState<string>(filter?.start ?? new Date().toISOString().slice(0, 10));
-    const [end, setEnd] = useState<string>(filter?.end ?? new Date().toISOString().slice(0, 10));
-    const [weekStart, setWeekStart] = useState<string>(filter?.week_start ?? getMonday(new Date()).toISOString().slice(0, 10));
-    // const [month, setMonth] = useState<string>(filter?.month ?? new Date().toISOString().slice(0, 7));
-    const [mode, setMode] = useState<FilterMode>(filter?.mode ?? 'bulanan');
 
-    // default month ke YYYY-MM saat first load
-    const [month, setMonth] = useState<string>(filter?.month ?? new Date().toISOString().slice(0, 7));
+    // Helper function untuk format tanggal
+    const formatDate = useCallback((date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }, []);
 
+    // Date range states - Default ke bulan ini
+    const currentDate = new Date();
+    const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+    const [start, setStart] = useState<string>(filter?.start ?? formatDate(startOfMonth));
+    const [end, setEnd] = useState<string>(filter?.end ?? formatDate(endOfMonth));
+
+    // Date range picker state
+    const [range, setRange] = useState<DateRange | undefined>(() => {
+        if (filter?.start && filter?.end) {
+            return {
+                from: new Date(filter.start),
+                to: new Date(filter.end),
+            };
+        }
+        return undefined;
+    });
+
+    // Sync state dengan server filter
     useEffect(() => {
-        // keep local state synced when server filter changes (navigation)
         if (filter) {
-            setMode(filter.mode ?? 'harian');
-            if (filter.date) setDate(filter.date);
             if (filter.start) setStart(filter.start);
             if (filter.end) setEnd(filter.end);
-            if (filter.week_start) setWeekStart(filter.week_start);
-            if (filter.month) setMonth(filter.month);
-        }
-    }, [filter?.mode, filter?.date, filter?.start, filter?.end, filter?.week_start, filter?.month]);
 
-    const periodLabel = useMemo(() => {
-        switch (mode) {
-            case 'harian':
-                return formatDateID(date);
-            case 'range':
-                return `${formatDateID(start)} — ${formatDateID(end)}`;
-            case 'mingguan':
-                return `${formatDateID(weekStart)} — ${formatDateID(addDays(new Date(weekStart), 6).toISOString().slice(0, 10))}`;
-            case 'bulanan': {
-                const [y, m] = month.split('-');
-                const d = new Date(Number(y), Number(m) - 1, 1);
-                return d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            // Update range picker - pastikan parsing tanggal yang benar
+            if (filter.start && filter.end) {
+                // Parse tanggal dengan timezone lokal, bukan UTC
+                const startDate = new Date(filter.start + 'T00:00:00');
+                const endDate = new Date(filter.end + 'T00:00:00');
+
+                setRange({
+                    from: startDate,
+                    to: endDate,
+                });
             }
         }
-    }, [mode, date, start, end, weekStart, month]);
+    }, [filter?.start, filter?.end]);
+
+    // Update start/end ketika range picker berubah
+    useEffect(() => {
+        if (range?.from && range?.to) {
+            setStart(formatDate(range.from));
+            setEnd(formatDate(range.to));
+        }
+    }, [range, formatDate]);
+
+    const periodLabel = useMemo(() => {
+        return `${formatDateID(start)} — ${formatDateID(end)}`;
+    }, [start, end]);
 
     function applyFilter() {
-        const qs: Record<string, string> = { mode };
-        // console.log('props:', usePage().props);
-        if (mode === 'harian') qs.date = date;
-        if (mode === 'range') {
-            qs.start = start;
-            qs.end = end;
-        }
-        if (mode === 'mingguan') qs.week_start = weekStart;
-        if (mode === 'bulanan') qs.month = month;
+        const qs: Record<string, string> = {
+            start: start,
+            end: end,
+        };
 
         router.get('/report/revenue', qs, { preserveState: true, preserveScroll: true });
     }
 
     function resetFilter() {
-        setMode('bulanan');
-        const mm = new Date().toISOString().slice(0, 7);
-        setMonth(mm);
-        // update URL dan ambil data ulang
-        router.get('/report/revenue', { mode: 'bulanan', month: mm }, { preserveState: true, preserveScroll: true });
+        // Reset ke bulan ini
+        const currentDate = new Date();
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+        const startMonth = formatDate(startOfMonth);
+        const endMonth = formatDate(endOfMonth);
+
+        setStart(startMonth);
+        setEnd(endMonth);
+        setRange({
+            from: startOfMonth,
+            to: endOfMonth,
+        });
+
+        router.get('/report/revenue', { start: startMonth, end: endMonth }, { preserveState: true, preserveScroll: true });
     }
 
     function exportCSV() {
-        const params = new URLSearchParams({ mode });
-        if (mode === 'harian') params.set('date', date);
-        if (mode === 'range') {
-            params.set('start', start);
-            params.set('end', end);
-        }
-        if (mode === 'mingguan') params.set('week_start', weekStart);
-        if (mode === 'bulanan') params.set('month', month);
-        // Assume backend route returns CSV
+        const params = new URLSearchParams({
+            start: start,
+            end: end,
+        });
+
         window.open(`/report/revenue/export?${params.toString()}`, '_blank');
     }
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'Laporan',
-            href: '/report',
-        },
-        {
-            title: 'Pendapatan COR',
-            href: '/report/revenue',
-        },
-    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -162,7 +176,7 @@ export default function RevenueReport() {
                 {/* Header */}
                 <div className="mb-4 flex items-start justify-between gap-2">
                     <div>
-                        <h1 className="text-xl font-semibold">Laporan Pendapatan</h1>
+                        <h1 className="text-xl font-semibold">Laporan Pendapatan COR</h1>
                         <p className="text-sm text-muted-foreground">Periode: {periodLabel}</p>
                     </div>
                     <div className="flex gap-2">
@@ -184,59 +198,27 @@ export default function RevenueReport() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-                            <div className="md:col-span-2">
-                                <Label className="mb-1 block">Mode</Label>
-                                <Select value={mode} onValueChange={(v: FilterMode) => setMode(v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Pilih mode" />
-                                    </SelectTrigger>
+                            <div className="md:col-span-4">
+                                <DateRangePicker
+                                    value={range}
+                                    onChange={(newRange) => {
+                                        setRange(newRange);
+                                    }}
+                                />
+                            </div>
+                            {/* <div className="w-32 md:col-span-4">
+                                <Select>
+                                    <SelectTrigger>PPN</SelectTrigger>
                                     <SelectContent>
-                                        {MODES.map((m) => (
-                                            <SelectItem key={m.value} value={m.value}>
-                                                {m.label}
-                                            </SelectItem>
-                                        ))}
+                                        <SelectItem value="all">Semua</SelectItem>
+                                        <SelectItem value="include">Termasuk PPN</SelectItem>
+                                        <SelectItem value="exclude">Tidak Termasuk PPN</SelectItem>
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            {mode === 'harian' && (
-                                <div className="md:col-span-2">
-                                    <Label className="mb-1 block">Tanggal</Label>
-                                    <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-                                </div>
-                            )}
-
-                            {mode === 'range' && (
-                                <>
-                                    <div className="md:col-span-2">
-                                        <Label className="mb-1 block">Mulai</Label>
-                                        <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <Label className="mb-1 block">Selesai</Label>
-                                        <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-                                    </div>
-                                </>
-                            )}
-
-                            {mode === 'mingguan' && (
-                                <div className="md:col-span-2">
-                                    <Label className="mb-1 block">Mulai Minggu (Senin)</Label>
-                                    <Input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
-                                </div>
-                            )}
-
-                            {mode === 'bulanan' && (
-                                <div className="md:col-span-2">
-                                    <Label className="mb-1 block">Bulan</Label>
-                                    <Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-                                </div>
-                            )}
-
+                            </div> */}
                             <div className="flex items-end md:col-span-2">
                                 <Button className="w-full md:w-auto" onClick={applyFilter}>
-                                    Terapkan
+                                    Terapkan Filter
                                 </Button>
                             </div>
                         </div>
@@ -253,26 +235,26 @@ export default function RevenueReport() {
                     </Card>
                     <Card>
                         <CardHeader className="pb-1">
-                            <CardTitle className="text-sm">Total Net</CardTitle>
+                            <CardTitle className="text-sm">Total Pricelist</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-2xl font-semibold">{formatIDR(summary?.total_pricelist ?? 0)}</CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-1">
+                            <CardTitle className="text-sm">Total Net Price</CardTitle>
                         </CardHeader>
                         <CardContent className="text-2xl font-semibold">{formatIDR(summary?.total_net ?? 0)}</CardContent>
                     </Card>
                     <Card>
                         <CardHeader className="pb-1">
-                            <CardTitle className="text-sm">Total Pendapatan (Net-net)</CardTitle>
+                            <CardTitle className="text-sm">Total NetNet</CardTitle>
                         </CardHeader>
-                        <CardContent className="text-2xl font-semibold">{formatIDR(summary?.total_net_net ?? 0)}</CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="pb-1">
-                            <CardTitle className="text-sm">Rata-rata / Transaksi</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-2xl font-semibold">{formatIDR(summary?.avg_per_tx ?? 0)}</CardContent>
+                        <CardContent className="text-2xl font-semibold text-green-600">{formatIDR(summary?.total_net_net ?? 0)}</CardContent>
                     </Card>
                 </div>
 
                 {/* Table */}
-                <Card>
+                {/* <Card>
                     <CardHeader className="pb-2">
                         <CardTitle className="text-base">Detail Transaksi</CardTitle>
                     </CardHeader>
@@ -292,8 +274,12 @@ export default function RevenueReport() {
                                 <TableBody>
                                     {rows.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                                Tidak ada data.
+                                            <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                                                <div className="flex flex-col items-center">
+                                                    <Filter className="mb-2 h-8 w-8 text-gray-300" />
+                                                    <p className="text-lg font-medium">Tidak ada data</p>
+                                                    <p className="text-sm">Tidak ada data transaksi untuk periode ini</p>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     )}
@@ -304,7 +290,86 @@ export default function RevenueReport() {
                                             <TableCell>{r.customer}</TableCell>
                                             <TableCell>{r.sales}</TableCell>
                                             <TableCell className="text-right">{formatIDR(r.total_net)}</TableCell>
-                                            <TableCell className="text-right">{formatIDR(r.total_net_net)}</TableCell>
+                                            <TableCell className="text-right font-medium text-blue-600">{formatIDR(r.total_net_net)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+                </Card> */}
+
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Detail Transaksi Harian</CardTitle>
+                        <p className="text-sm text-muted-foreground">Transaksi rental multi-hari dibagi per hari berdasarkan durasi di database</p>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead className="w-[130px]">Tanggal</TableHead>
+                                        <TableHead>No. Ref</TableHead>
+                                        <TableHead>Customer</TableHead>
+                                        <TableHead>Sales</TableHead>
+                                        <TableHead>Durasi</TableHead>
+                                        <TableHead className="text-right">NetPrice/Hari</TableHead>
+                                        <TableHead className="text-right">NetNet/Hari</TableHead>
+                                        <TableHead className="text-right">Total NetNet</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {rows.length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
+                                                <div className="flex flex-col items-center">
+                                                    <Filter className="mb-2 h-8 w-8 text-gray-300" />
+                                                    <p className="text-lg font-medium">Tidak ada data</p>
+                                                    <p className="text-sm">Tidak ada data transaksi untuk periode ini</p>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                    {rows.map((r) => (
+                                        <TableRow key={r.id} className={r.is_daily_split ? 'border-l-4 border-l-blue-500 bg-blue-50' : ''}>
+                                            <TableCell className="font-medium">
+                                                {formatDateID(r.date)}
+                                                {r.is_daily_split && <div className="mt-1 text-xs text-blue-600">harian</div>}
+                                            </TableCell>
+                                            <TableCell>{r.no_ref}</TableCell>
+                                            <TableCell>{r.customer}</TableCell>
+                                            <TableCell>{r.sales}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span
+                                                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                                                            r.is_daily_split ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                    >
+                                                        {r.rental_duration} hari
+                                                    </span>
+                                                    {r.rental_period && <div className="mt-1 text-xs text-gray-500">{r.rental_period}</div>}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {formatIDR(r.total_net)}
+                                                {r.is_daily_split && <div className="mt-1 text-xs text-blue-600">1/{r.rental_duration} bagian</div>}
+                                            </TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">
+                                                {formatIDR(r.total_net_net)}
+                                                {r.is_daily_split && <div className="mt-1 text-xs text-blue-600">1/{r.rental_duration} bagian</div>}
+                                            </TableCell>
+                                            <TableCell className="text-right text-gray-600">
+                                                {r.is_daily_split ? (
+                                                    <div>
+                                                        {formatIDR(r.original_total_net_net)}
+                                                        <div className="mt-1 text-xs text-gray-500">total {r.rental_duration} hari</div>
+                                                    </div>
+                                                ) : (
+                                                    formatIDR(r.total_net_net)
+                                                )}
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -317,7 +382,7 @@ export default function RevenueReport() {
     );
 }
 
-// date utils --------------------------------------------
+// Date utils --------------------------------------------
 function getMonday(d: Date) {
     const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     const day = date.getUTCDay();

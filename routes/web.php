@@ -44,7 +44,7 @@ Route::middleware(['auth'])->prefix('report')->name('report.')->group(function (
 });
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/report/revenue', [RevenueController::class, 'index'])->name('report.revenue');
-    //Route::get('/reports/revenue/export', [RevenueController::class, 'export'])->name('reports.revenue.export');
+    Route::get('/report/revenue/export', [RevenueController::class, 'export'])->name('report.revenue.export');
 });
 
 //API
