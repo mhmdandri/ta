@@ -3,7 +3,7 @@ import { formatRupiah } from '@/lib/formatRupiah';
 import { type BreadcrumbItem } from '@/types';
 import { type Paginator, type Summary, type Transaction } from '@/types/types';
 import { Head } from '@inertiajs/react';
-import { DollarSign, Download, Eye, Filter, Package, TrendingUp, Users } from 'lucide-react';
+import { DollarSign, Download, Eye, Filter, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 // Import shadcn/ui components
 import Pagination from '@/components/Pagination';
@@ -44,14 +44,14 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
 
     // Filter transactions based on current filter state
     const filteredTransactions = transactions.data.filter((transaction) => {
-        if (filter.status !== 'all' && transaction.transaction_type !== filter.status) return false;
+        if (filter.status !== 'all' && transaction.status !== filter.status) return false;
         if (filter.customer && !transaction.customer?.name.toLowerCase().includes(filter.customer.toLowerCase())) return false;
         if (filter.sales !== 'all' && !transaction.sales?.name.toLowerCase().includes(filter.sales.toLowerCase())) return false;
         return true;
     });
 
     // Get unique values for filter options
-    const uniqueStatuses = [...new Set(transactions.data.map((t) => t.transaction_type))].filter(Boolean);
+    const uniqueStatuses = [...new Set(transactions.data.map((t) => t.status))].filter(Boolean);
     const uniqueCustomers = [...new Set(transactions.data.map((t) => t.customer?.name))].filter((name) => name && name !== 'N/A');
     const uniqueSales = [...new Set(transactions.data.map((t) => t.sales?.name))].filter((name) => name && name !== 'N/A');
 
@@ -62,7 +62,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Report', href: '' },
+                { title: 'Laporan', href: '' },
                 { title: 'Rekap COR', href: '' },
             ]}
         >
@@ -94,34 +94,34 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Customer</CardTitle>
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{summary.total_customers}</div>
-                            <p className="text-xs text-muted-foreground">Customer terlibat</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Qty</CardTitle>
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{summary.total_qty.toLocaleString()}</div>
-                            <p className="text-xs text-muted-foreground">Kuantitas barang</p>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Nilai (NetNet)</CardTitle>
+                            <CardTitle className="text-sm font-medium">Total Pricelist</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatRupiah(summary.total_value)}</div>
-                            <p className="text-xs text-muted-foreground">Nilai transaksi</p>
+                            <div className="text-2xl font-bold">{formatRupiah(summary.total_pricelist)}</div>
+                            <p className="text-xs text-muted-foreground">Nilai Transaksi Pricelist</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Net Price</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatRupiah(summary.total_net_price)}</div>
+                            <p className="text-xs text-muted-foreground">Nilai Transaksi NetPrice</p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total NetNet</CardTitle>
+                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{formatRupiah(summary.total_net_net)}</div>
+                            <p className="text-xs text-muted-foreground">Nilai transaksi NetNet</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -201,16 +201,16 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>No</TableHead>
+                                        <TableHead>NO</TableHead>
                                         <TableHead>NO. COR</TableHead>
-                                        <TableHead>Nama Customer</TableHead>
-                                        <TableHead>Sales</TableHead>
-                                        <TableHead className="text-right">Qty</TableHead>
-                                        <TableHead className="text-right">Total Price List</TableHead>
+                                        <TableHead>PELANGGAN</TableHead>
+                                        <TableHead>SALES</TableHead>
+                                        <TableHead className="text-right">QTY</TableHead>
+                                        <TableHead className="text-right">PRICELIST</TableHead>
                                         <TableHead className="text-right">NET PRICE</TableHead>
                                         <TableHead className="text-right">PPN 11%</TableHead>
                                         <TableHead className="text-right">SUB TOTAL</TableHead>
-                                        <TableHead className="text-center">Action</TableHead>
+                                        <TableHead className="text-center">ACTION</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

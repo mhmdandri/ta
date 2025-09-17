@@ -114,8 +114,10 @@ export type Item = {
 export type Summary = {
     total_transactions: number;
     total_customers: number;
-    total_value: number;
+    total_net_net: number;
     total_qty: number;
+    total_pricelist: number;
+    total_net_price: number;
 };
 export type LinkType = { url: string | null; label: string; active: boolean };
 export type Paginator<T> = {

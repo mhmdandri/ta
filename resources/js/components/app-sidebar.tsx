@@ -6,7 +6,7 @@ import { dashboard } from '@/routes';
 import customers from '@/routes/customers';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, User2, UserPlus, UsersRound } from 'lucide-react';
+import { Building2, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, User2 } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -21,19 +21,19 @@ export function AppSidebar() {
         {
             title: 'Pelanggan',
             href: '#',
-            icon: UsersRound,
+            icon: Building2,
             children: [
                 {
                     title: 'Daftar Pelanggan',
                     href: customers.index(),
-                    icon: User2,
+                    icon: Building2,
                 },
                 ...(isAdminUp
                     ? [
                           {
                               title: 'Tambah Pelanggan',
                               href: customers.create(),
-                              icon: UserPlus,
+                              icon: Building2,
                           },
                       ]
                     : []),
@@ -65,31 +65,39 @@ export function AppSidebar() {
             href: '/transactions',
             icon: Receipt,
         },
-        {
-            title: 'Laporan',
-            href: '/report',
-            icon: NotebookPen,
-            children: [
-                {
-                    title: 'Rekap COR',
-                    href: '/report/rekap/cor',
-                    icon: NotebookPen,
-                },
-            ],
-        },
+        ...(isAdminUp
+            ? [
+                  {
+                      title: 'Laporan',
+                      href: '/report',
+                      icon: NotebookPen,
+                      children: [
+                          {
+                              title: 'Rekap COR',
+                              href: '/report/rekap/cor',
+                              icon: NotebookPen,
+                          },
+                          {
+                              title: 'Pendapatan COR',
+                              href: '/report/revenue',
+                              icon: NotebookPen,
+                          },
+                      ],
+                  },
+              ]
+            : []),
     ];
 
     const footerNavItems: NavItem[] = [
-        {
-            title: 'Repository',
-            href: 'https://github.com/laravel/react-starter-kit',
-            icon: Folder,
-        },
-        {
-            title: 'Documentation',
-            href: 'https://laravel.com/docs/starter-kits#react',
-            icon: BookOpen,
-        },
+        ...(isAdminUp
+            ? [
+                  {
+                      title: 'Management Users',
+                      href: 'https://github.com/laravel/react-starter-kit',
+                      icon: User2,
+                  },
+              ]
+            : []),
     ];
     return (
         <Sidebar collapsible="icon" variant="inset">

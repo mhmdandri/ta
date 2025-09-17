@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PricelistController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Report\Rekap\CorRekapController;
@@ -13,15 +14,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Report\Pendapatan\RevenueController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
 });
 
 // route customer
@@ -40,6 +41,10 @@ Route::middleware(['auth'])->prefix('report')->name('report.')->group(function (
         Route::get('/cor', [CorRekapController::class, 'index'])->name('cor.index');
         Route::get('/cor/{id}', [CorRekapController::class, 'show'])->name('cor.show');
     });
+});
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/report/revenue', [RevenueController::class, 'index'])->name('report.revenue');
+    //Route::get('/reports/revenue/export', [RevenueController::class, 'export'])->name('reports.revenue.export');
 });
 
 //API

@@ -57,7 +57,7 @@ export default function RekapCorDetail({ transaction }: Props) {
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Report', href: '' },
+                { title: 'Laporan', href: '' },
                 { title: 'Rekap COR', href: '/report/rekap/cor' },
                 { title: 'Detail', href: '' },
             ]}
@@ -114,10 +114,6 @@ export default function RekapCorDetail({ transaction }: Props) {
                             Informasi Waktu & Lokasi
                         </h2>
                         <div className="space-y-3">
-                            <div className="flex justify-between">
-                                <span className="text-gray-600">Tanggal Transaksi:</span>
-                                <span className="font-medium">{formatOnlyDate(transaction.created_at)}</span>
-                            </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Rental Start:</span>
                                 <span className="font-medium">{formatOnlyDate(transaction.rental_start)}</span>
@@ -255,12 +251,12 @@ export default function RekapCorDetail({ transaction }: Props) {
                                 <span className="font-medium">{formatRupiah(transaction.total_discount)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-600">NetNet:</span>
-                                <span className="font-medium">{formatRupiah(transaction.total_net_net)}</span>
-                            </div>
-                            <div className="flex justify-between">
                                 <span className="text-gray-600">Net Price:</span>
                                 <span className="font-medium">{formatRupiah(transaction.total_net)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-gray-600">NetNet:</span>
+                                <span className="font-medium">{formatRupiah(transaction.total_net_net)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">DPP:</span>

@@ -4,22 +4,19 @@ namespace App\Http\Controllers\Report\Rekap;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controller as BaseController;
 
-class CorRekapController extends Controller
+class CorRekapController extends BaseController
 {
-    // Fungsi untuk menghitung ringkasan statistik
-    // private function calculateSummary($transactions)
-    // {
-    //     return [
-    //         'total_transactions' => $transactions->count(),
-    //         'total_customers' => $transactions->pluck('customer.name')->filter()->unique()->count(),
-    //         'total_value' => $transactions->sum('total_final'),
-    //         'total_qty' => $transactions->sum('total_qty'),
-    //     ];
-    // }
-    // Fungsi untuk menentukan gudang utama berdasarkan jumlah item
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+        $this->middleware(['role:admin|manager|'])->only(['index', 'show']);
+    }
     private function determineMainWarehouse($items)
     {
         $warehouseCounts = $items->groupBy(function ($item) {
@@ -112,11 +109,18 @@ class CorRekapController extends Controller
 
         $transactions->setCollection($transformedTransactions);
         $allTransactions = Transaction::with(['customer:id,name', 'items'])->latest()->get();
+        $currentMonth = Carbon::now()->month;
+        // buat summary perbulan
+        $monthlyTransactions = $allTransactions->filter(function ($transaction) use ($currentMonth) {
+            return Carbon::parse($transaction->created_at)->month === $currentMonth;
+        });
         $summary = [
-            'total_transactions' => $allTransactions->count(),
-            'total_customers' => $allTransactions->pluck('customer.name')->filter()->unique()->count(),
-            'total_value' => $allTransactions->sum('total_net_net'),
-            'total_qty' => $allTransactions->sum(function ($transaction) {
+            'total_transactions' => $monthlyTransactions->count(),
+            'total_customers' => $monthlyTransactions->pluck('customer.name')->filter()->unique()->count(),
+            'total_net_net' => $monthlyTransactions->sum('total_net_net'),
+            'total_net_price' => $monthlyTransactions->sum('total_net'),
+            'total_pricelist' => $monthlyTransactions->sum('total_pricelist'),
+            'total_qty' => $monthlyTransactions->sum(function ($transaction) {
                 return $transaction->items->sum('qty');
             }),
         ];
