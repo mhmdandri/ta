@@ -20,6 +20,8 @@ return new class extends Migration
             $table->enum('termin_of_payment', ['cod', '7hari', '15hari', '30hari'])->default('cod');
             $table->enum('payment', ['cash', 'transfer'])->default('cash');
             $table->decimal('operate_fee', 15, 2)->default(0);
+            $table->decimal('jasa_kirim', 15, 2)->default(0);
+            $table->decimal('jasa_sticker', 15, 2)->default(0);
             $table->decimal('total_pricelist', 15, 2)->default(0);
             $table->decimal('price_deal', 15, 2)->default(0);
             $table->decimal('total_discount', 15, 2)->default(0);

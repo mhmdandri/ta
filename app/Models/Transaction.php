@@ -37,6 +37,8 @@ class Transaction extends Model
         'jenis_instalasi',
         'delivery',
         'status',
+        'jasa_kirim',
+        'jasa_sticker',
     ];
     public function customer()
     {

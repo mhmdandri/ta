@@ -4,6 +4,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PricelistController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\Report\Komisi\ComissionController;
 use App\Http\Controllers\Report\Rekap\CorRekapController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Reports\RekapController;
@@ -45,6 +46,10 @@ Route::middleware(['auth'])->prefix('report')->name('report.')->group(function (
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/report/revenue', [RevenueController::class, 'index'])->name('report.revenue');
     Route::get('/report/revenue/export', [RevenueController::class, 'export'])->name('report.revenue.export');
+});
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/report/commisions', [ComissionController::class, 'index'])->name('report.commissions');
+    Route::get('/report/commisions/export', [ComissionController::class, 'export'])->name('report.commissions.export');
 });
 
 //API

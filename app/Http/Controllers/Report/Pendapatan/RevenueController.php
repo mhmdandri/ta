@@ -64,7 +64,12 @@ class RevenueController extends Controller
                     });
             })
             ->orderBy('rental_start', 'desc');
-
+        $ppnFilter = $request->string('ppn')->toString();
+        if ($ppnFilter === 'ppn') {
+            $transactionsQuery->where('is_ppn', true);
+        } elseif ($ppnFilter === 'non') {
+            $transactionsQuery->where('is_ppn', false);
+        }
         $transactions = $transactionsQuery->get();
 
         // Debug log untuk melihat transaksi yang ditemukan
@@ -99,6 +104,7 @@ class RevenueController extends Controller
                     'total_net' => (float) $transaction->total_net,
                     'total_net_net' => (float) $transaction->total_net_net,
                     'rental_duration' => 1,
+                    'ppn_value' => (float) $transaction->ppn_value,
                     'is_daily_split' => false,
                     'original_total_net' => (float) $transaction->total_net,
                     'original_total_net_net' => (float) $transaction->total_net_net,
@@ -115,6 +121,7 @@ class RevenueController extends Controller
                 // Hitung pendapatan per hari
                 $dailyNet = $transaction->total_net / $duration;
                 $dailyNetNet = $transaction->total_net_net / $duration;
+                $dailyPpn = $transaction->ppn_value / $duration;
 
                 // Generate entry untuk setiap hari dalam periode rental yang overlap dengan filter
                 $currentDate = Carbon::parse(max($rentalStart->format('Y-m-d'), $startDate->format('Y-m-d')));
@@ -131,6 +138,7 @@ class RevenueController extends Controller
                         'total_net' => (float) $dailyNet,
                         'total_net_net' => (float) $dailyNetNet,
                         'rental_duration' => $duration,
+                        'ppn_value' => (float) $dailyPpn,
                         'is_daily_split' => true,
                         'original_total_net' => (float) $transaction->total_net,
                         'original_total_net_net' => (float) $transaction->total_net_net,
@@ -158,6 +166,7 @@ class RevenueController extends Controller
             'filter' => [
                 'start' => $start,
                 'end' => $end,
+                'ppn' => in_array($ppnFilter, ['ppn', 'non', 'all'], true) ? $ppnFilter : null,
             ]
         ]);
     }
@@ -196,7 +205,12 @@ class RevenueController extends Controller
                     });
             })
             ->orderBy('rental_start', 'desc');
-
+        $ppnFilter = $request->string('ppn')->toString();
+        if ($ppnFilter === 'ppn') {
+            $transactionsQuery->where('is_ppn', true);
+        } elseif ($ppnFilter === 'non') {
+            $transactionsQuery->where('is_ppn', false);
+        }
         $transactions = $transactionsQuery->get();
 
         // Process data sama seperti di index
@@ -215,6 +229,7 @@ class RevenueController extends Controller
                     'total_net_net' => $transaction->total_net_net,
                     'duration' => 1,
                     'daily_label' => '1 hari',
+                    'ppn_value' => $transaction->ppn_value,
                     'original_total' => $transaction->total_net_net
                 ]);
             } else {
@@ -223,6 +238,7 @@ class RevenueController extends Controller
 
                 $dailyNet = $transaction->total_net / $duration;
                 $dailyNetNet = $transaction->total_net_net / $duration;
+                $dailyPpn = $transaction->ppn_value / $duration;
 
                 $currentDate = Carbon::parse(max($rentalStart->format('Y-m-d'), $startDate->format('Y-m-d')));
                 $lastDate = Carbon::parse(min($rentalEnd->format('Y-m-d'), $endDate->format('Y-m-d')));
@@ -236,6 +252,7 @@ class RevenueController extends Controller
                         'total_net' => $dailyNet,
                         'total_net_net' => $dailyNetNet,
                         'duration' => $duration,
+                        'ppn_value' => $dailyPpn,
                         'daily_label' => '1/' . $duration . ' dari ' . $duration . ' hari',
                         'original_total' => $transaction->total_net_net
                     ]);
@@ -249,8 +266,8 @@ class RevenueController extends Controller
         $rows = $rows->sortByDesc(function ($item) {
             return Carbon::createFromFormat('d/m/Y', $item['date']);
         });
-
-        $filename = 'laporan-pendapatan-harian-' . $start . '-to-' . $end . '.csv';
+        $ppnSuffix = in_array($ppnFilter, ['ppn', 'non', 'all'], true) ? '-' . $ppnFilter : '';
+        $filename = 'laporan-pendapatan-harian-' . $ppnSuffix . '-' . $start . '-to-' . $end . '.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',

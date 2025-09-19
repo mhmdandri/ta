@@ -42,8 +42,8 @@ class TransactionController extends Controller
     {
         $services = [
             'operate_fee' => 0,
-            'sticker_fee' => 0,
-            'delivery_fee' => 0,
+            'jasa_kirim' => 0,
+            'jasa_sticker' => 0,
         ];
 
         foreach ($items as $item) {
@@ -54,10 +54,10 @@ class TransactionController extends Controller
                         $services['operate_fee'] = $item['net_net'];
                         break;
                     case 'Jasa Sticker':
-                        $services['sticker_fee'] = $item['net_net'];
+                        $services['jasa_sticker'] = $item['net_net'];
                         break;
-                    case 'Jasa Kirim':
-                        $services['delivery_fee'] = $item['net_net'];
+                    case 'Jasa Pengiriman':
+                        $services['jasa_kirim'] = $item['net_net'];
                         break;
                 }
             }
@@ -100,7 +100,7 @@ class TransactionController extends Controller
             'items.*.qty' => 'required|numeric|min:0.0001',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount' => 'required|numeric',
-            'items.*.discount_percent' => 'required|numeric|',
+            'items.*.discount_percent' => 'required|numeric',
             'items.*.net_price' => 'required|numeric|min:0',
             'items.*.net_net' => 'required|numeric|min:0',
         ]);
@@ -140,6 +140,8 @@ class TransactionController extends Controller
                 'termin_of_payment' => $validated['termin_of_payment'],
                 'payment' => $validated['payment'],
                 'operate_fee' => $jasa['operate_fee'], // biaya operasi (jika ada)
+                'jasa_kirim' => $jasa['jasa_kirim'], // biaya kirim (jika ada)
+                'jasa_sticker' => $jasa['jasa_sticker'], // biaya
                 'total_pricelist' => $validated['total_pricelist'], //$sumPricelist,          // override dengan kalkulasi server
                 'price_deal' => $validated['price_deal'], //$priceDeal,
                 'total_discount' => $validated['total_discount'], //$totalDiscount,

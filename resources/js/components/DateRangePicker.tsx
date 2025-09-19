@@ -5,7 +5,6 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import * as React from 'react';
 import { type DateRange } from 'react-day-picker';
 import { Calendar } from './ui/calendar';
-import { Label } from './ui/label';
 
 function formatRange(r?: DateRange) {
     if (!r?.from && !r?.to) return 'Select dates';
@@ -23,8 +22,8 @@ export default function DateRangePicker({ value, onChange }: { value?: DateRange
     }, [value]);
 
     return (
-        <div className="flex flex-col gap-2">
-            <Label htmlFor="tanggal">Tanggal</Label>
+        <div className="">
+            {/* <Label htmlFor="tanggal">Tanggal</Label> */}
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button variant="outline" className="w-[280px] justify-start">
