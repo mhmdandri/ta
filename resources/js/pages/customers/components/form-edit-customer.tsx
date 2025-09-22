@@ -35,7 +35,7 @@ const CardWrapper = ({
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Edit className="h-5 w-5" />
-                    Edit Produk: {customerName}
+                    Edit Pelanggan: {customerName}
                 </CardTitle>
             </CardHeader>
             <CardContent>{children}</CardContent>
@@ -210,7 +210,7 @@ export default function FormEditCustomer({ customer, className = '', onSuccess, 
                         ) : (
                             <>
                                 <Save className="h-4 w-4" />
-                                Perbarui Produk
+                                Perbarui Pelanggan
                             </>
                         )}
                     </Button>

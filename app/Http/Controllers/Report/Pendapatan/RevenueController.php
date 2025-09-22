@@ -31,14 +31,6 @@ class RevenueController extends Controller
             $end = $endDate->format('Y-m-d');
         }
 
-        // Debug log untuk cek tanggal
-        Log::info('Revenue filter dates:', [
-            'start_param' => $start,
-            'end_param' => $end,
-            'start_parsed' => $startDate->toDateTimeString(),
-            'end_parsed' => $endDate->toDateTimeString(),
-        ]);
-
         // Ambil semua transaksi yang rental_start dalam periode atau overlap dengan periode
         $transactionsQuery = Transaction::with(['customer', 'sales'])
             ->where(function ($query) use ($startDate, $endDate) {
@@ -71,19 +63,6 @@ class RevenueController extends Controller
             $transactionsQuery->where('is_ppn', false);
         }
         $transactions = $transactionsQuery->get();
-
-        // Debug log untuk melihat transaksi yang ditemukan
-        Log::info('Found transactions:', [
-            'count' => $transactions->count(),
-            'transactions' => $transactions->map(function ($t) {
-                return [
-                    'id' => $t->id,
-                    'rental_start' => $t->rental_start,
-                    'rental_end' => $t->rental_end,
-                    'rental_duration' => $t->rental_duration
-                ];
-            })->toArray()
-        ]);
 
         // Process setiap transaksi berdasarkan durasi
         $rows = collect();

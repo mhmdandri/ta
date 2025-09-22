@@ -144,19 +144,18 @@ export default function TableCustomers({ className = '', showActions = true, onE
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => onEdit(customer)}
-                                                                className="h-8 w-8 p-0"
+                                                                className="h-8 w-8 p-0 text-[var(--gray-bg)] hover:text-[var(--gray-bg)]"
                                                                 disabled={!isAdminUp}
                                                             >
                                                                 <Edit className="h-4 w-4" />
                                                             </Button>
                                                         )}
-                                                        {/* Hapus produk */}
                                                         <DeleteCustomer
                                                             trigger={
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                    className="h-8 w-8 p-0 text-[var(--red-bg)] hover:text-[var(--red-bg)]"
                                                                     disabled={!isAdminUp}
                                                                 >
                                                                     <Trash2 className="h-4 w-4" />
@@ -176,7 +175,7 @@ export default function TableCustomers({ className = '', showActions = true, onE
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={showActions ? 8 : 7} className="h-24 text-center">
-                                            {customers.total === 0 ? 'Belum ada produk tersedia' : 'Tidak ada produk yang sesuai dengan filter'}
+                                            {customers.total === 0 ? 'Belum ada data pelanggan' : 'Tidak ada pelanggan yang sesuai dengan filter'}
                                         </TableCell>
                                     </TableRow>
                                 )}

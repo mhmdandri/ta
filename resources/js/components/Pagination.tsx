@@ -1,6 +1,7 @@
 import type { Link, PaginationProps } from '@/types/types';
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import { Button } from './ui/button';
 
 export default function Pagination({ links, className = '' }: PaginationProps) {
     const [isLoading, setIsLoading] = useState(false);
@@ -59,13 +60,13 @@ export default function Pagination({ links, className = '' }: PaginationProps) {
         <>
             <div className={`flex flex-wrap justify-start gap-1 ${className}`}>
                 {visibleLinks.map((link, index) => (
-                    <button
+                    <Button
                         key={index}
                         disabled={!link.url || isLoading}
                         onClick={() => link.url && handlePageChange(link.url)}
                         className={`min-w-[2.5rem] rounded border px-3 py-1 text-sm transition-all focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none ${
                             link.active
-                                ? 'dark:border-primary-600 dark:bg-primary-600 border-gray-800 bg-gray-800 text-white dark:text-white'
+                                ? 'dark:border-primary-600 dark:bg-primary-600 border-gray-800 text-white dark:text-white'
                                 : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
                         } ${!link.url ? 'cursor-not-allowed opacity-50 dark:opacity-60' : 'hover:shadow-sm dark:hover:shadow-neutral-700/50'} ${
                             isLoading ? 'cursor-wait' : ''

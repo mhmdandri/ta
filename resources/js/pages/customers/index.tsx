@@ -1,4 +1,3 @@
-import { useToast } from '@/components/ToastProvider';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Customer } from '@/types/types';
@@ -8,22 +7,13 @@ import TableCustomers from './components/table-customers';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Pelanggan',
-        href: '/product',
+        href: '/customers',
     },
 ];
 export default function PelangganCreate() {
-    const { addToast } = useToast();
     const handleEdit = (customer: Customer) => {
         router.visit(`/customers/${customer.id}/edit`);
     };
-    // const handleDelete = (customer: Customer) => {
-    //     addToast({
-    //         message: `Delete product: ${customer.name}`,
-    //         type: 'warning',
-    //         position: 'top-right',
-    //         duration: 3000,
-    //     });
-    // };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Daftar Pelanggan" />

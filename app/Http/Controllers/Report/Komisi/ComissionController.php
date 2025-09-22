@@ -14,11 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class ComissionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $startDate = Carbon::now('Asia/Jakarta')->startOfMonth();
-        $endDate   = Carbon::now('Asia/Jakarta')->endOfMonth();
-        $gudangOS = "04";
+        $startDate = $request->get('start', Carbon::now('Asia/Jakarta')->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end', Carbon::now('Asia/Jakarta')->endOfMonth()->format('Y-m-d'));
         $sales = User::query()
             ->where('role', 'sales')
             // total transaksi
@@ -97,8 +96,22 @@ class ComissionController extends Controller
                     $diskon = $pricelist - $achieved;
                     $avgDisc = $diskon / $pricelist * 100;
                 }
-                $persenTarget = $achieved / $target * 100;
-                // kembalikan object dengan field tambahan (tetap bawa field lama)
+                $persenTarget = $target > 0 ? ($achieved / $target * 100) : 0;
+                $rateKomisi = 0;
+                if ($persenTarget <= 75 && $target == 300000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 5 : ($avgDisc <= 25 ? $rateKomisi = 4 : ($avgDisc <= 30 ? $rateKomisi = 3 : $rateKomisi = 2));
+                } else if ($persenTarget <= 100 && $target == 300000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 6 : ($avgDisc <= 25 ? $rateKomisi = 5 : ($avgDisc <= 30 ? $rateKomisi = 4 : $rateKomisi = 3));
+                } else if ($persenTarget > 100 && $target == 300000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 7 : ($avgDisc <= 25 ? $rateKomisi = 6 : ($avgDisc <= 30 ? $rateKomisi = 5 : $rateKomisi = 4));
+                }
+                if ($persenTarget <= 75 && $target == 200000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 2.5 : ($avgDisc <= 25 ? $rateKomisi = 2 : ($avgDisc <= 30 ? $rateKomisi = 1.5 : $rateKomisi = 1));
+                } else if ($persenTarget <= 100 && $target == 200000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 3 : ($avgDisc <= 25 ? $rateKomisi = 2.5 : ($avgDisc <= 30 ? $rateKomisi = 2 : $rateKomisi = 1.5));
+                } else if ($persenTarget > 100 && $target == 200000000) {
+                    $avgDisc <= 20 ? $rateKomisi = 3.5 : ($avgDisc <= 25 ? $rateKomisi = 3 : ($avgDisc <= 30 ? $rateKomisi = 2.5 : $rateKomisi = 2));
+                }
                 return [
                     'id'                   => $u->id,
                     'name'                 => $u->name,
@@ -117,6 +130,7 @@ class ComissionController extends Controller
                     'sale_count'           => (int)($u->sale_count ?? 0),
                     'persenTarget'         => $persenTarget,
                     'avgDisc'              => $avgDisc,
+                    'rateKomisi'           => $rateKomisi,
                 ];
             });
         $byGudang = DB::table('users')
@@ -162,29 +176,11 @@ class ComissionController extends Controller
                 'netNetWithoutOS'      => $netNetWithoutOS,
             ]);
         });
-        // $sales = $sales->map(function (array $row) use ($byGudang) {
-        //     $sumAll    = (float)$row['sum_total_net_net'];
-        //     $sumGudang = (float)($byGudang->get($row['id'])->sum_total_net_net_os ?? 0);
-        //     $sumNon    = max(0, $sumAll - $sumGudang);
-
-        //     // (opsional) persen per gudang terhadap target
-        //     $target    = (float)$row['target_sales'];
-        //     $pctGdg    = $target > 0 ? round(($sumGudang / $target) * 100, 2) : 0;
-        //     $netNetWithoutOS = $sumAll - $sumGudang;
-
-        //     return array_merge($row, [
-        //         'sum_total_net_net_os'   => $sumGudang, // hanya gudang 04
-        //         'netNetWithoutOS'      => $netNetWithoutOS,
-        //         'sum_total_net_net_non_gudang'  => $sumNon,    // total selain gudang 04
-        //         'persenTarget_gudang_04'        => $pctGdg,
-        //     ]);
-        // });
-
         return Inertia::render('report/komisi/index', [
             'sales' => $sales,
             'filters' => [
-                'start_date' => $startDate->toDateString(),
-                'end_date'   => $endDate->toDateString(),
+                'start_date' => $startDate,
+                'end_date'   => $endDate,
             ],
         ]);
     }

@@ -32,6 +32,7 @@ export default function RekapCorDetail({ transaction }: Props) {
     } else if (transaction.status == 'cancelled') {
         transaction.status = 'Cancelled';
     }
+    console.log(transaction);
 
     // Hitung total untuk setiap gudang
     const totalNetNetGudang01 = calculateNetNetByWarehouse('01'); // KMJ
@@ -248,23 +249,23 @@ export default function RekapCorDetail({ transaction }: Props) {
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Diskon:</span>
-                                <span className="font-medium">{formatRupiah(transaction.total_discount)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.total_discount, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Net Price:</span>
-                                <span className="font-medium">{formatRupiah(transaction.total_net)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.total_net, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">NetNet:</span>
-                                <span className="font-medium">{formatRupiah(transaction.total_net_net)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.total_net_net, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">DPP:</span>
-                                <span className="font-medium">{formatRupiah(transaction.total_net)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.total_net, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">PPN 11%:</span>
-                                <span className="font-medium">{formatRupiah(transaction.ppn_value)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.ppn_value, false)}</span>
                             </div>
                             <div className="flex justify-between border-t pt-3">
                                 <span className="font-semibold text-gray-900">TOTAL</span>
@@ -278,24 +279,20 @@ export default function RekapCorDetail({ transaction }: Props) {
                         <div className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">EKSTRA DISKON:</span>
-                                <span className="font-medium">{formatRupiah(transaction.extra_discount)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.extra_discount, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">JASA OPERATE:</span>
-                                <span className="font-medium">{formatRupiah(transaction.operate_fee)}</span>
+                                <span className="font-medium">{formatRupiah(transaction.operate_fee, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">JASA STIKER:</span>
-                                <span className="font-medium">-</span>
+                                <span className="font-medium">{formatRupiah(transaction.jasa_sticker, false)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">JASA KIRIM:</span>
-                                <span className="font-medium">-</span>
+                                <span className="font-medium">{formatRupiah(transaction.jasa_kirim, false)}</span>
                             </div>
-                            {/* <div className="flex justify-between">
-                                <span className="text-gray-600">POT KENDALA EVENT:</span>
-                                <span className="font-medium">-</span>
-                            </div> */}
                         </div>
                     </div>
                 </div>

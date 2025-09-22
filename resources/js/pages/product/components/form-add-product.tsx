@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { type Product, FormDataProduk } from '@/types/types';
 import { useForm } from '@inertiajs/react';
 import { Package, Plus, Save } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
 interface FormAddProductProps {
     className?: string;
     onSuccess?: (product: Product) => void;
@@ -81,6 +81,17 @@ export default function FormAddProduct({ className = '', onSuccess, onCancel, is
             onCancel();
         }
     };
+    useEffect(() => {
+        const price = data.price_1_day;
+        setData({
+            ...data,
+            price_3_days: price > 0 ? price * 2.2 : 0,
+            price_5_days: price > 0 ? price * 3.2 : 0,
+            price_7_days: price > 0 ? price * 4.2 : 0,
+            price_10_days: price > 0 ? price * 5 : 0,
+            price_30_days: price > 0 ? price * 9 : 0,
+        });
+    }, [data.price_1_day]);
 
     return (
         <CardWrapper isModal={isModal} className={className}>

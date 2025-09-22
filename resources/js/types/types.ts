@@ -60,6 +60,8 @@ export type Transaction = {
     termin_of_payment: string;
     payment: string;
     operate_fee: number;
+    jasa_sticker: number;
+    jasa_kirim: number;
     total_pricelist: number;
     price_deal: number;
     total_discount: number;
