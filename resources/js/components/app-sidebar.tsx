@@ -6,7 +6,7 @@ import { dashboard } from '@/routes';
 import customers from '@/routes/customers';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, DollarSign, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, User2 } from 'lucide-react';
+import { Building2, DollarSign, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, Target, User2 } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -98,8 +98,13 @@ export function AppSidebar() {
             ? [
                   {
                       title: 'Management Users',
-                      href: 'https://github.com/laravel/react-starter-kit',
+                      href: '/users',
                       icon: User2,
+                  },
+                  {
+                      title: 'Pengaturan Target',
+                      href: '/targets',
+                      icon: Target,
                   },
               ]
             : []),

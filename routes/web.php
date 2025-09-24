@@ -6,8 +6,6 @@ use App\Http\Controllers\PricelistController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Report\Komisi\ComissionController;
 use App\Http\Controllers\Report\Rekap\CorRekapController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\Reports\RekapController;
 use App\Http\Controllers\TransactionController;
 use App\Models\Customer;
 use App\Models\Product;
@@ -16,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Report\Pendapatan\RevenueController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\TargetController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -36,6 +36,10 @@ Route::resource('product', ProductController::class)->middleware(['auth', 'verif
 Route::resource('transactions', TransactionController::class)->middleware(['auth', 'verified']);
 
 
+// route user
+Route::resource('users', UserController::class)->middleware(['auth', 'verified']);
+
+route::resource('targets', TargetController::class)->middleware(['auth', 'verified']);
 // route report
 Route::middleware(['auth'])->prefix('report')->name('report.')->group(function () {
     Route::prefix('rekap')->name('rekap.')->group(function () {
@@ -77,13 +81,25 @@ Route::get('/customer/search', function (Request $request) {
         ->get();
 })->name('customer.search');
 Route::get('/users/search', function (Request $request) {
-    $q = $request->get('q', '');
-    return User::where('name', 'like', "%{$q}%")
-        ->where('role', 'sales')
+    $q = trim((string) $request->get('q', ''));
+
+    return User::query()
+        ->select(['id', 'name', 'role']) // minim field
+        ->where(function ($w) {
+            $w->where('role', 'sales')
+                ->orWhere(function ($spv) {
+                    $spv->where('role', 'spv')
+                        ->where('is_sales_enabled', true);
+                })->orWhere(function ($mgr) {
+                    $mgr->where('role', 'manager')
+                        ->where('is_sales_enabled', true);
+                });
+        })
+        ->when($q !== '', fn($qq) => $qq->where('name', 'like', "%{$q}%"))
+        ->orderBy('name')
         ->limit(10)
         ->get();
 });
 Route::get('/pricelists/{productId}', [PricelistController::class, 'show']);
-
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

@@ -57,13 +57,13 @@ export default function DeleteCustomer({
                     {description && <DialogDescription>{description}</DialogDescription>}
                 </DialogHeader>
 
-                <DialogFooter className="gap-2 sm:justify-start">
+                <DialogFooter className="gap-2">
                     <DialogClose asChild>
-                        <Button type="button" variant="secondary" disabled={submitting}>
+                        <Button type="button" variant="ghost" disabled={submitting}>
                             {cancelText}
                         </Button>
                     </DialogClose>
-                    <Button type="button" variant="destructive" className="text-gray-200" onClick={handleConfirm} disabled={submitting}>
+                    <Button type="button" variant="destructive" className="text-white" onClick={handleConfirm} disabled={submitting}>
                         {submitting ? 'Menghapus…' : confirmText}
                     </Button>
                 </DialogFooter>

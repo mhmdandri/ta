@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { UserSelect } from '@/components/UserSelect';
 import AppLayout from '@/layouts/app-layout';
 import { formatPercent, formatRupiah } from '@/lib/formatRupiah';
-import { type BreadcrumbItem } from '@/types';
+import { SharedData, type BreadcrumbItem } from '@/types';
 import type { Customer, Item, Product, User } from '@/types/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Save, Trash2 } from 'lucide-react';
@@ -66,6 +66,13 @@ export default function TransactionsCreate() {
     const [location, setLocation] = useState('');
     const { addToast } = useToast();
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const { auth } = usePage<SharedData>().props;
+
+    useEffect(() => {
+        if (auth.user.role != 'admin' && auth.user.role != 'manager') {
+            setSelectedUser(auth.user);
+        }
+    }, []);
     useEffect(() => {
         if (errors) {
             Object.entries(errors).forEach(([field, message]) => {

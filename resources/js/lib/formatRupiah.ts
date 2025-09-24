@@ -43,3 +43,15 @@ export function formatPercent(value?: number | string | null): string {
 
     return `${num}%`;
 }
+export function formatKomisi(value?: number | string | null): string {
+    if (value == null || value === '') return '0%';
+
+    let num = typeof value === 'string' ? Number(value) : value;
+
+    // tangani NaN atau Infinity
+    if (!Number.isFinite(num)) return '0%';
+
+    const rounded = parseFloat(num.toFixed(1));
+
+    return `${rounded}%`;
+}

@@ -14,8 +14,4 @@ class Customer extends Model
         'email',
         'npwp'
     ];
-    // public function transactions()
-    // {
-    //     return $this->hasMany(Transaction::class);
-    // }
 }

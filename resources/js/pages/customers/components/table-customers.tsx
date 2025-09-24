@@ -161,7 +161,7 @@ export default function TableCustomers({ className = '', showActions = true, onE
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
                                                             }
-                                                            title="Hapus Produk?"
+                                                            title="Hapus Customer?"
                                                             description={`Anda akan menghapus customer "${customer.name}" Tindakan ini tidak dapat dibatalkan.`}
                                                             confirmText="Ya, Hapus"
                                                             cancelText="Batal"

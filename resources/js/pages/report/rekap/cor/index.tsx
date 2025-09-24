@@ -81,7 +81,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <Card>
+                    <Card className="bg-primary-foreground">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
                             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -92,7 +92,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="bg-primary-foreground">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Pricelist</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -103,7 +103,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="bg-primary-foreground">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total Net Price</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -114,7 +114,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card className="bg-primary-foreground">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total NetNet</CardTitle>
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -127,7 +127,7 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
                 </div>
 
                 {/* Filter Section */}
-                <Card>
+                <Card className="bg-primary-foreground">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-lg">
                             <Filter className="h-5 w-5" />

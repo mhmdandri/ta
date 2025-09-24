@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import type { Customer, User } from '@/types/types';
+import type { User } from '@/types/types';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -13,7 +13,7 @@ type Props = {
 
 export function UserSelect({ value, onChange }: Props) {
     const [open, setOpen] = useState(false);
-    const [sales, setSales] = useState<Customer[]>([]);
+    const [sales, setSales] = useState<User[]>([]);
     const [query, setQuery] = useState('');
 
     // Fetch customers setiap kali query berubah
@@ -42,7 +42,7 @@ export function UserSelect({ value, onChange }: Props) {
                         onValueChange={setQuery} // <-- update query
                     />
                     <CommandList>
-                        <CommandEmpty>Customer tidak ditemukan.</CommandEmpty>
+                        <CommandEmpty>Sales tidak ditemukan.</CommandEmpty>
                         <CommandGroup>
                             {sales.map((c) => (
                                 <CommandItem

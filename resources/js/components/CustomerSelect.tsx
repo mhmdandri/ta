@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { Customer } from '@/types/types';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import * as React from 'react';
+import { useEffect, useState } from 'react';
 
 type Props = {
     value?: Customer;
@@ -12,12 +12,12 @@ type Props = {
 };
 
 export function CustomerSelect({ value, onChange }: Props) {
-    const [open, setOpen] = React.useState(false);
-    const [customers, setCustomers] = React.useState<Customer[]>([]);
-    const [query, setQuery] = React.useState('');
+    const [open, setOpen] = useState(false);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [query, setQuery] = useState('');
 
     // Fetch customers setiap kali query berubah
-    React.useEffect(() => {
+    useEffect(() => {
         const timeout = setTimeout(() => {
             fetch(`/customer/search?q=${encodeURIComponent(query)}`)
                 .then((res) => res.json())

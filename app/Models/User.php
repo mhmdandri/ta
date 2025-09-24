@@ -21,6 +21,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
+        'target_sales',
+        'supervisor_id',
+        'is_sales_enabled',
+        'manager_id',
     ];
 
     /**
@@ -50,5 +55,24 @@ class User extends Authenticatable
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'sales_id');
+    }
+    public function supervisor()
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'supervisor_id');
+    }
+
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function spvs()
+    {
+        return $this->hasMany(User::class, 'manager_id');
     }
 }

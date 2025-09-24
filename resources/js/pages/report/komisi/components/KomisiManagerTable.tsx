@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 type Props = {
     s: {
         avgDisc?: number; // mis. 30 -> 30%
-        rateKomisi?: number; // mis. 1.5 -> 1.5%
+        rateKomisiManager?: number; // mis. 1.5 -> 1.5%
         persenTarget?: number; // mis. 68 -> 68%
         netNetWithoutOS?: number; // nilai penjualan sendiri (tanpa OS)
         sum_total_net_net_os?: number; // nilai OS
@@ -14,9 +14,9 @@ type Props = {
     formatKomisi: (n?: number) => string;
 };
 
-export default function KomisiSummaryTable({ s, formatRupiah, formatKomisi }: Props) {
+export default function KomisiManagerTable({ s, formatRupiah, formatKomisi }: Props) {
     const avgDisc = s.avgDisc ?? 0;
-    const rateKomisi = s.rateKomisi ?? 0;
+    const rateKomisi = s.rateKomisiManager ?? 0;
     const persenTarget = s.persenTarget ?? 0;
 
     const barangSendiri = s.netNetWithoutOS ?? 0;
