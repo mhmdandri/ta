@@ -11,7 +11,8 @@ import AppLogo from './app-logo';
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager';
+    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager' || auth.user?.role === 'gm';
+    const canAccessTargets = auth.user?.role === 'manager' || auth.user?.role === 'spv' || auth.user?.role === 'gm';
     const mainNavItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -101,6 +102,10 @@ export function AppSidebar() {
                       href: '/users',
                       icon: User2,
                   },
+              ]
+            : []),
+        ...(canAccessTargets
+            ? [
                   {
                       title: 'Pengaturan Target',
                       href: '/targets',

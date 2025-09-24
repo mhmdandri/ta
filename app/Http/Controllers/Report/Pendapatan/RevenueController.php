@@ -9,9 +9,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
+use Illuminate\Routing\Controller as BaseController;
 
-class RevenueController extends Controller
+class RevenueController extends BaseController
 {
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+        $this->middleware(['role:admin|manager|gm|spv|'])->only(['index', 'show']);
+    }
     public function index(Request $request)
     {
         // Default ke bulan ini jika tidak ada filter

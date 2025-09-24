@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, SharedData, User } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Search, UserPlus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import TableUser from './components/TableUser';
 
@@ -82,7 +82,15 @@ const UserPage = () => {
     };
     const handleEditUser = (updated: User) => {
         // diasumsikan updated.role sudah berisi role baru dari dialog
-        router.put(`/users/${updated.id}`);
+        router.put(`/users/${updated.id}`, updated as any, {
+            preserveScroll: true,
+            onSuccess: () => {
+                console.log('User updated successfully');
+            },
+            onError: (error) => {
+                console.error('Error updating user:', error);
+            },
+        });
     };
 
     return (
@@ -90,20 +98,26 @@ const UserPage = () => {
             <Head title="Daftar User" />
 
             <div className="space-y-6 p-4">
-                <div className="flex">
-                    <Button>
-                        <Plus />
-                        <Link href="/users/create" className="ml-2">
-                            Tambah User
-                        </Link>
-                    </Button>
+                <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                        <p className="text-muted-foreground">Manage your team members and their permissions</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button asChild>
+                            <Link href="/users/create">
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Add User
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">Filter & Pencarian</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex w-1/2 gap-4">
+                        <div className="flex w-full gap-4">
                             <div className="flex-1 space-y-2">
                                 <Label htmlFor="search">Pencarian</Label>
                                 <div className="relative">

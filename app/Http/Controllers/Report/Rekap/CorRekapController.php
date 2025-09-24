@@ -15,7 +15,7 @@ class CorRekapController extends BaseController
     {
         // Semua butuh auth & verified
         $this->middleware(['auth', 'verified']);
-        $this->middleware(['role:admin|manager|'])->only(['index', 'show']);
+        $this->middleware(['role:admin|manager|gm|spv|'])->only(['index', 'show']);
     }
     private function determineMainWarehouse($items)
     {

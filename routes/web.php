@@ -40,6 +40,14 @@ Route::resource('transactions', TransactionController::class)->middleware(['auth
 Route::resource('users', UserController::class)->middleware(['auth', 'verified']);
 
 route::resource('targets', TargetController::class)->middleware(['auth', 'verified']);
+
+// Target API routes
+Route::middleware(['auth', 'verified'])->prefix('api/targets')->name('api.targets.')->group(function () {
+    Route::post('/manager', [TargetController::class, 'updateManagerTarget'])->name('manager.update');
+    Route::post('/spv', [TargetController::class, 'updateSpvTarget'])->name('spv.update');
+    Route::post('/sales', [TargetController::class, 'updateSalesTarget'])->name('sales.update');
+});
+
 // route report
 Route::middleware(['auth'])->prefix('report')->name('report.')->group(function () {
     Route::prefix('rekap')->name('rekap.')->group(function () {

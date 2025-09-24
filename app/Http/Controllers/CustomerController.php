@@ -21,10 +21,10 @@ class CustomerController extends BaseController
         $this->middleware(['auth', 'verified']);
 
         // Khusus action create & store hanya admin
-        $this->middleware(['role:admin|sales|manager'])->only(['create', 'store']);
+        // $this->middleware(['role:admin|sales|manager'])->only(['create', 'store']);
         // Kalau mau, update & delete juga dibatasi
-        $this->middleware(['role:admin|manager'])->only(['edit', 'update']);
-        $this->middleware(['role:admin|manager'])->only(['destroy']);
+        $this->middleware(['role:admin|manager|gm'])->only(['edit', 'update']);
+        $this->middleware(['role:admin|manager|gm'])->only(['destroy']);
     }
     public function search(Request $request)
     {

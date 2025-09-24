@@ -75,4 +75,16 @@ class User extends Authenticatable
     {
         return $this->hasMany(User::class, 'manager_id');
     }
+
+    // Relasi untuk target SPV
+    public function spvTargets()
+    {
+        return $this->hasMany(SpvTarget::class, 'spv_id');
+    }
+
+    // Relasi untuk target Manager
+    public function managerTargets()
+    {
+        return $this->hasMany(ManagerTarget::class, 'manager_id');
+    }
 }

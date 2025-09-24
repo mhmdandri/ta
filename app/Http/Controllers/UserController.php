@@ -5,9 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controller as BaseController;
 
-class UserController extends Controller
+class UserController extends BaseController
 {
+
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+
+        $this->middleware(['role:admin|manager|gm'])->only(['edit', 'update', 'index', 'create', 'store']);
+        $this->middleware(['role:admin|manager|gm'])->only(['destroy']);
+    }
     public function search(Request $request)
     {
         $query = $request->get('q', '');
@@ -79,8 +89,4 @@ class UserController extends Controller
         $user->save();
         return redirect()->route('users.index')->with('success', 'Role user berhasil diupdate.');
     }
-    // public function indexTarget()
-    // {
-    //     return Inertia::render('users/targets');
-    // }
 }

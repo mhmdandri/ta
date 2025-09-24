@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User } from '@/types';
 import { AlertCircle, Edit, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type TableUserProps = {
     users?: User[];
@@ -20,7 +20,7 @@ const TableUser = ({ users = [], className = '', showActions = true, onEdit, onD
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [editRole, setEditRole] = useState<string>('user');
+    const [editRole, setEditRole] = useState<string>('sales');
 
     const handleDeleteClick = (user: User) => {
         console.log('Selected user for deletion:', user);
@@ -43,10 +43,14 @@ const TableUser = ({ users = [], className = '', showActions = true, onEdit, onD
     const openEditDialog = (user: User) => {
         setSelectedUser(user);
         // fallback kalau user.role belum ada di tipe
-        const currentRole = (user as any)?.role ?? 'user';
+        const currentRole = (user as any)?.role ?? 'sales';
         setEditRole(currentRole);
         setEditDialogOpen(true);
     };
+    useEffect(() => {
+        console.log('Editing user:', selectedUser);
+        console.log('Current role:', editRole);
+    }, [editDialogOpen]);
     const handleEditSave = () => {
         if (!selectedUser || !onEdit) {
             setEditDialogOpen(false);

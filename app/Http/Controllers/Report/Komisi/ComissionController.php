@@ -11,9 +11,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Routing\Controller as BaseController;
 
-class ComissionController extends Controller
+class ComissionController extends BaseController
 {
+    public function __construct()
+    {
+        // Semua butuh auth & verified
+        $this->middleware(['auth', 'verified']);
+        $this->middleware(['role:admin|manager|gm|spv|'])->only(['index', 'show']);
+    }
     public function index(Request $request)
     {
         // 1) Ambil filter tanggal + period bulanan (untuk target history)
