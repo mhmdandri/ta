@@ -1,3 +1,4 @@
+import ChartBarMultiple from '@/components/BarChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatRupiah } from '@/lib/formatRupiah';
@@ -15,15 +16,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type Props = {
     summary: Summary;
+    globalSummary: Summary;
+    weeklyChart: any;
+    weeklyMeta: any;
+    role: string;
 };
 
-export default function Dashboard({ summary }: Props) {
+export default function Dashboard({ summary, weeklyChart, weeklyMeta, role }: Props) {
     const { auth } = usePage<SharedData>().props;
     const isSales = auth.user?.role === 'sales';
+    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'spv' || auth.user?.role === 'manager' || auth.user?.role === 'gm';
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="m-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* <div className="w-full"> */}
+            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 lg:grid-cols-4">
                 {isSales && (
                     <>
                         <Card>
@@ -68,7 +75,62 @@ export default function Dashboard({ summary }: Props) {
                         </Card>
                     </>
                 )}
+
+                {isAdminUp && (
+                    <>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{summary.total_transactions}</div>
+                                <p className="text-xs text-muted-foreground">Transaksi bulan ini</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Pricelist</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{formatRupiah(summary.total_pricelist)}</div>
+                                <p className="text-xs text-muted-foreground">Pricelist bulan ini</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total NetPrice</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{formatRupiah(summary.total_net_price)}</div>
+                                <p className="text-xs text-muted-foreground">NetPrice bulan ini</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total NetNet</CardTitle>
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{formatRupiah(summary.total_net_net)}</div>
+                                <p className="text-xs text-muted-foreground">NetNet bulan ini</p>
+                            </CardContent>
+                        </Card>
+                    </>
+                )}
             </div>
+            <div className="flex w-full items-center gap-4 p-4">
+                <div className="w-1/2">
+                    <ChartBarMultiple weeklyChart={weeklyChart} weeklyMeta={weeklyMeta} role={role} />
+                </div>
+                <div className="w-1/2">
+                    <ChartBarMultiple weeklyChart={weeklyChart} weeklyMeta={weeklyMeta} role={role} />
+                </div>
+            </div>
+
+            {/* </div> */}
         </AppLayout>
     );
 }

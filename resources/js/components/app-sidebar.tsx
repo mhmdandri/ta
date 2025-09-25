@@ -11,8 +11,8 @@ import AppLogo from './app-logo';
 
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
-    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager' || auth.user?.role === 'gm';
-    const canAccessTargets = auth.user?.role === 'manager' || auth.user?.role === 'spv' || auth.user?.role === 'gm';
+    const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'manager' || auth.user?.role === 'gm' || auth.user?.role === 'spv';
+    const canAccessUsers = auth.user?.role === 'admin' || auth.user?.role === 'manager' || auth.user?.role === 'gm';
     const mainNavItems: NavItem[] = [
         {
             title: 'Dashboard',
@@ -95,7 +95,7 @@ export function AppSidebar() {
     ];
 
     const footerNavItems: NavItem[] = [
-        ...(isAdminUp
+        ...(canAccessUsers
             ? [
                   {
                       title: 'Management Users',
@@ -104,7 +104,7 @@ export function AppSidebar() {
                   },
               ]
             : []),
-        ...(canAccessTargets
+        ...(isAdminUp
             ? [
                   {
                       title: 'Pengaturan Target',

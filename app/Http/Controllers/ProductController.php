@@ -18,7 +18,7 @@ class ProductController extends BaseController
         $this->middleware(['auth', 'verified']);
 
         // Khusus action create & store hanya admin
-        $this->middleware(['role:admin|manager|sales'])->only(['create', 'store']);
+        $this->middleware(['role:admin|manager|sales|spv'])->only(['create', 'store']);
         // Kalau mau, update & delete juga dibatasi
         $this->middleware(['role:admin|manager'])->only(['edit', 'update']);
         $this->middleware(['role:admin|manager'])->only(['destroy']);
