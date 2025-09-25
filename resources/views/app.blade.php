@@ -8,6 +8,19 @@
     {{-- Inline script to detect system dark mode preference and apply it immediately --}}
     <script>
         (function() {
+            var g = typeof globalThis !== 'undefined' ? globalThis : window;
+            g.crypto = g.crypto || {};
+            if (typeof g.crypto.randomUUID !== 'function') {
+                g.crypto.randomUUID = function() {
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        var r = Math.random() * 16 | 0,
+                            v = c === 'x' ? r : (r & 0x3) | 0x8;
+                        return v.toString(16);
+                    });
+                };
+            }
+        })();
+        (function() {
             const appearance = '{{ $appearance ?? "system" }}';
 
             if (appearance === 'system') {
