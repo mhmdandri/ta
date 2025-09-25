@@ -69,7 +69,7 @@ export default function TransactionsCreate() {
     const { auth } = usePage<SharedData>().props;
 
     useEffect(() => {
-        if (auth.user.role != 'admin' && auth.user.role != 'manager') {
+        if (auth.user.role != 'admin' && auth.user.role != 'manager' && auth.user.role != 'gm') {
             setSelectedUser(auth.user);
         }
     }, []);

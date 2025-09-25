@@ -141,7 +141,7 @@ export default function Welcome({
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/40 via-white/10 to-white/0"></div>
 
                 {/* HERO TEXT */}
-                <div className="relative z-20 mx-auto max-w-4xl px-4 pt-24 text-center sm:pt-28 md:pt-10">
+                <div className="relative z-20 mx-auto max-w-4xl px-4 pt-60 text-center sm:pt-28 md:pt-10">
                     <h1 className="mb-3 text-2xl font-bold drop-shadow sm:text-3xl md:mb-4 md:pt-10 md:text-5xl">PT Karindo Mitra Jakarta</h1>
                     <p className="mx-auto mb-6 max-w-xl text-[13px] text-slate-700 sm:text-sm md:text-lg">
                         Smart System Solution — All in One Rental Solution

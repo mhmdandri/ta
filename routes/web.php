@@ -88,7 +88,7 @@ Route::get('/customer/search', function (Request $request) {
         ->limit(10)
         ->get();
 })->name('customer.search');
-Route::get('/users/search', function (Request $request) {
+Route::get('/api/users/search', function (Request $request) {
     $q = trim((string) $request->get('q', ''));
 
     return User::query()
