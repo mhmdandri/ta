@@ -1,91 +1,3 @@
-// import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
-// import InputError from '@/components/input-error';
-// import TextLink from '@/components/text-link';
-// import { Button } from '@/components/ui/button';
-// import { Checkbox } from '@/components/ui/checkbox';
-// import { Input } from '@/components/ui/input';
-// import { Label } from '@/components/ui/label';
-// import AuthLayout from '@/layouts/auth-layout';
-// import { register } from '@/routes';
-// import { request } from '@/routes/password';
-// import { Form, Head } from '@inertiajs/react';
-// import { LoaderCircle } from 'lucide-react';
-
-// interface LoginProps {
-//     status?: string;
-//     canResetPassword: boolean;
-// }
-
-// export default function Login({ status, canResetPassword }: LoginProps) {
-//     return (
-//         <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
-//             <Head title="Log in" />
-//             <Form {...AuthenticatedSessionController.store.form()} resetOnSuccess={['password']} className="flex flex-col gap-6">
-//                 {({ processing, errors }) => (
-//                     <>
-//                         <div className="grid gap-6">
-//                             <div className="grid gap-2">
-//                                 <Label htmlFor="email">Email address</Label>
-//                                 <Input
-//                                     id="email"
-//                                     type="email"
-//                                     name="email"
-//                                     required
-//                                     autoFocus
-//                                     tabIndex={1}
-//                                     autoComplete="email"
-//                                     placeholder="email@example.com"
-//                                 />
-//                                 <InputError message={errors.email} />
-//                             </div>
-
-//                             <div className="grid gap-2">
-//                                 <div className="flex items-center">
-//                                     <Label htmlFor="password">Password</Label>
-//                                     {canResetPassword && (
-//                                         <TextLink href={request()} className="ml-auto text-sm" tabIndex={5}>
-//                                             Forgot password?
-//                                         </TextLink>
-//                                     )}
-//                                 </div>
-//                                 <Input
-//                                     id="password"
-//                                     type="password"
-//                                     name="password"
-//                                     required
-//                                     tabIndex={2}
-//                                     autoComplete="current-password"
-//                                     placeholder="Password"
-//                                 />
-//                                 <InputError message={errors.password} />
-//                             </div>
-
-//                             <div className="flex items-center space-x-3">
-//                                 <Checkbox id="remember" name="remember" tabIndex={3} />
-//                                 <Label htmlFor="remember">Remember me</Label>
-//                             </div>
-
-//                             <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
-//                                 {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-//                                 Log in
-//                             </Button>
-//                         </div>
-
-//                         <div className="text-center text-sm text-muted-foreground">
-//                             Don't have an account?{' '}
-//                             <TextLink href={register()} tabIndex={5}>
-//                                 Sign up
-//                             </TextLink>
-//                         </div>
-//                     </>
-//                 )}
-//             </Form>
-
-//             {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
-//         </AuthLayout>
-//     );
-// }
-
 import AuthenticatedSessionController from '@/actions/App/Http/Controllers/Auth/AuthenticatedSessionController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -132,6 +44,7 @@ export default function Login({
 
             {/* RIGHT RED PANEL: gunakan PNG tanpa className */}
             <div
+                className="absolute inset-y-0 right-0 hidden w-1/2 lg:block"
                 style={{
                     position: 'absolute',
                     top: 0,
@@ -153,7 +66,7 @@ export default function Login({
             <div className="relative mx-auto grid min-h-screen w-full max-w-[1280px] grid-cols-1 items-center px-6 py-10 md:px-10 lg:grid-cols-2 lg:gap-6">
                 {/* Left: welcome text */}
                 <div className="z-10 flex flex-col gap-10 lg:gap-16">
-                    <div className="max-w-2xl">
+                    <div className="mx-auto max-w-2xl lg:mx-0">
                         <h1 className="text-5xl font-extrabold tracking-tight text-[#b10b0b] sm:text-6xl">Welcome</h1>
                     </div>
                 </div>
@@ -161,9 +74,9 @@ export default function Login({
                 {/* Right: login card */}
                 <div className="relative z-20 flex w-full items-center justify-center lg:justify-end">
                     <div className="w-full max-w-md">
-                        <h2 className="mb-6 text-center text-4xl font-extrabold text-white">Login</h2>
+                        <h2 className="mb-6 text-center text-4xl font-extrabold text-[#b9151b] lg:text-white">Login</h2>
 
-                        <div className="rounded-2xl border border-white/20 bg-white/0 p-6 backdrop-blur-[2px]">
+                        <div className="rounded-2xl border border-white/20 bg-[#b9151b] p-6 backdrop-blur-[2px] sm:bg-[#b9151b] lg:bg-white/0">
                             <Form {...AuthenticatedSessionController.store.form()} resetOnSuccess={['password']} className="flex flex-col gap-6">
                                 {({ processing, errors }) => (
                                     <>
