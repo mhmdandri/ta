@@ -66,7 +66,7 @@ export default function Login({
             <div className="relative mx-auto grid min-h-screen w-full max-w-[1280px] grid-cols-1 items-center px-6 py-10 md:px-10 lg:grid-cols-2 lg:gap-6">
                 {/* Left: welcome text */}
                 <div className="z-10 flex flex-col gap-10 lg:gap-16">
-                    <div className="mx-auto max-w-2xl lg:mx-0">
+                    <div className="mx-auto max-w-2xl xl:mx-0 2xl:-mx-2">
                         <h1 className="text-5xl font-extrabold tracking-tight text-[#b10b0b] sm:text-6xl">Welcome</h1>
                     </div>
                 </div>

@@ -2,9 +2,9 @@ import AppLayout from '@/layouts/app-layout';
 import { formatRupiah } from '@/lib/formatRupiah';
 import { type BreadcrumbItem } from '@/types';
 import { type Paginator, type Summary, type Transaction } from '@/types/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { DollarSign, Download, Eye, Filter, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 // Import shadcn/ui components
 import Pagination from '@/components/Pagination';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,12 @@ interface Props {
         to: number;
     };
     summary: Summary;
+    filter: {
+        customer: string;
+        sales: string;
+        status: string;
+        search: string;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -35,11 +41,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function RekapCorIndex({ transactions, summary }: Props) {
+export default function RekapCorIndex({ transactions, summary, filter: serverFilter }: Props) {
     const [filter, setFilter] = useState({
-        status: 'all',
-        customer: '',
-        sales: 'all',
+        // serverFilter = dari props backend (agar state sync ketika paginasi)
+        status: serverFilter?.status || 'all',
+        customer: serverFilter?.search || serverFilter?.customer || '',
+        sales: serverFilter?.sales || 'all',
     });
 
     // Filter transactions based on current filter state
@@ -49,14 +56,36 @@ export default function RekapCorIndex({ transactions, summary }: Props) {
         if (filter.sales !== 'all' && !transaction.sales?.name.toLowerCase().includes(filter.sales.toLowerCase())) return false;
         return true;
     });
+    const timer = useRef<number | undefined>(undefined);
+    const applyFilter = (next: typeof filter) => {
+        // kirim ke backend; gunakan 'search' agar konsisten
+        router.get(
+            window.location.pathname,
+            {
+                search: next.customer, // backend mapping ke 'search'
+                sales: next.sales,
+                status: next.status,
+            },
+            { preserveState: true, preserveScroll: true, replace: true, only: ['transactions', 'summary', 'filter'] },
+        );
+    };
 
     // Get unique values for filter options
     const uniqueStatuses = [...new Set(transactions.data.map((t) => t.status))].filter(Boolean);
     const uniqueCustomers = [...new Set(transactions.data.map((t) => t.customer?.name))].filter((name) => name && name !== 'N/A');
     const uniqueSales = [...new Set(transactions.data.map((t) => t.sales?.name))].filter((name) => name && name !== 'N/A');
 
-    const handleFilterChange = (key: string, value: string) => {
-        setFilter((prev) => ({ ...prev, [key]: value }));
+    const handleFilterChange = (key: keyof typeof filter, value: string) => {
+        const next = { ...filter, [key]: value };
+        setFilter(next);
+
+        // untuk teks (customer/search) debounce, untuk select apply langsung
+        if (key === 'customer') {
+            if (timer.current) window.clearTimeout(timer.current);
+            timer.current = window.setTimeout(() => applyFilter(next), 400);
+        } else {
+            applyFilter(next);
+        }
     };
 
     return (

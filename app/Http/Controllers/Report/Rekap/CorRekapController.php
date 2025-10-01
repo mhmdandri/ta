@@ -27,11 +27,51 @@ class CorRekapController extends BaseController
 
         return $warehouseCounts->keys()->first() ?? '01';
     }
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
-            ->latest()
-            ->paginate(10);
+        $tz = 'Asia/Jakarta';
+        $search = trim($request->string('search')->toString() ?: $request->string('search')->toString());
+        $sales = trim($request->string('sales')->toString());
+        $status = trim($request->string('status')->toString());
+
+        $filter = [
+            'search' => $search,
+            'sales' => $sales,
+            'status' => $status,
+        ];
+
+        $query = Transaction::query()->with([
+            'customer:id,name',
+            'sales:id,name',
+            'items.product:id,code,name,description,type,price,stock,kode_gudang',
+        ]);
+
+        if ($search !== '') {
+            $s = $search;
+            $query->where(function ($q) use ($s) {
+                $like = "%{$s}%";
+                $q->where('no_penawaran', 'like', $like)
+                    ->orWhere('no_po', 'like', $like)
+                    ->orWhere('location', 'like', $like)
+                    ->orWhere('description', 'like', $like)
+                    ->orWhereHas('customer', fn($cq) => $cq->where('name', 'like', $like))
+                    ->orWhereHas('sales', fn($sq) => $sq->where('name', 'like', $like));
+            });
+        };
+        // FILTER STATUS (kecuali 'all' atau kosong)
+        if ($status !== '' && strtolower($status) !== 'all') {
+            $query->where('status', $status);
+        }
+
+        // FILTER SALES by NAMA (sesuai UI sekarang), abaikan 'all' / kosong
+        if ($sales !== '' && strtolower($sales) !== 'all') {
+            $like = "%{$sales}%";
+            $query->whereHas('sales', fn($sq) => $sq->where('name', 'like', $like));
+        }
+        $transactions = $query->latest()->paginate(10)->withQueryString();
+        // $transactions = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
+        //     ->latest()
+        //     ->paginate(10);
         $transformedTransactions = $transactions->getCollection()
             ->map(function ($transaction) {
                 return [
@@ -128,7 +168,8 @@ class CorRekapController extends BaseController
         ];
         return Inertia::render('report/rekap/cor/index', [
             'transactions' => $transactions,
-            'summary' => $summary
+            'summary' => $summary,
+            'filter' => $filter,
         ]);
     }
     public function show($id)

@@ -794,11 +794,11 @@ const ManagerTargetCard = ({ target, onUpdate, loading }: { target?: TargetData;
                             onChange={(e) => setTargetAmount(e.target.value)}
                             placeholder="0"
                         />
-                        <p className="mt-1 text-sm text-muted-foreground">{formatCurrency(parseFloat(targetAmount) || 0)}</p>
+                        <p className="mt-1 mb-2 text-sm text-muted-foreground">{formatCurrency(parseFloat(targetAmount) || 0)}</p>
+                        <Button type="submit" disabled={loading}>
+                            {loading ? 'Menyimpan...' : 'Simpan'}
+                        </Button>
                     </div>
-                    <Button type="submit" disabled={loading}>
-                        {loading ? 'Menyimpan...' : 'Simpan'}
-                    </Button>
                 </form>
             </CardContent>
         </Card>
@@ -882,11 +882,11 @@ const SpvCard = ({
                     <form onSubmit={handleSpvTargetSubmit} className="flex items-end gap-4">
                         <div className="flex-1">
                             <Input type="number" value={spvTarget} onChange={(e) => setSpvTarget(e.target.value)} placeholder="0" />
-                            <p className="mt-1 text-sm text-muted-foreground">{formatCurrency(parseFloat(spvTarget) || 0)}</p>
+                            <p className="mt-1 mb-2 text-sm text-muted-foreground">{formatCurrency(parseFloat(spvTarget) || 0)}</p>
+                            <Button type="submit" disabled={loading} size="sm">
+                                Update
+                            </Button>
                         </div>
-                        <Button type="submit" disabled={loading} size="sm">
-                            Update
-                        </Button>
                     </form>
                 </div>
 
@@ -915,13 +915,13 @@ const SpvCard = ({
                                             }
                                             placeholder="0"
                                         />
-                                        <p className="mt-1 text-sm text-muted-foreground">
+                                        <p className="mt-1 mb-2 text-sm text-muted-foreground">
                                             {formatCurrency(parseFloat(salesTargets[sales.id]) || 0)}
                                         </p>
+                                        <Button type="submit" disabled={loading} size="sm">
+                                            Update
+                                        </Button>
                                     </div>
-                                    <Button type="submit" disabled={loading} size="sm">
-                                        Update
-                                    </Button>
                                 </form>
                             </div>
                         ))}
