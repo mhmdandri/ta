@@ -18,11 +18,37 @@ class TransactionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::with(['customer', 'sales', 'items.product'])->latest()->paginate(10);
+        $month = trim($request->string('month')->toString());
+
+        // Default ke bulan saat ini jika tidak ada filter bulan
+        if (empty($month)) {
+            $month = Carbon::now()->format('Y-m');
+        }
+
+        $filter = [
+            'month' => $month,
+        ];
+
+        $query = Transaction::with(['customer', 'sales', 'items.product']);
+
+        // FILTER MONTH - filter berdasarkan bulan dan tahun
+        if ($month !== '') {
+            $monthYear = explode('-', $month);
+            if (count($monthYear) === 2) {
+                $year = $monthYear[0];
+                $monthNum = $monthYear[1];
+                $query->whereYear('created_at', $year)
+                    ->whereMonth('created_at', $monthNum);
+            }
+        }
+
+        $transactions = $query->latest()->paginate(10)->withQueryString();
+
         return Inertia::render('transactions/index', [
             'transactions' => $transactions,
+            'filter' => $filter,
         ]);
     }
 

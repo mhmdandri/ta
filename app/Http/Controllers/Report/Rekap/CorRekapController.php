@@ -33,11 +33,18 @@ class CorRekapController extends BaseController
         $search = trim($request->string('search')->toString() ?: $request->string('search')->toString());
         $sales = trim($request->string('sales')->toString());
         $status = trim($request->string('status')->toString());
+        $month = trim($request->string('month')->toString());
+
+        // Default ke bulan saat ini jika tidak ada filter bulan
+        if (empty($month)) {
+            $month = Carbon::now()->format('Y-m');
+        }
 
         $filter = [
             'search' => $search,
             'sales' => $sales,
             'status' => $status,
+            'month' => $month,
         ];
 
         $query = Transaction::query()->with([
@@ -68,6 +75,18 @@ class CorRekapController extends BaseController
             $like = "%{$sales}%";
             $query->whereHas('sales', fn($sq) => $sq->where('name', 'like', $like));
         }
+
+        // FILTER MONTH - filter berdasarkan bulan dan tahun
+        if ($month !== '') {
+            $monthYear = explode('-', $month);
+            if (count($monthYear) === 2) {
+                $year = $monthYear[0];
+                $monthNum = $monthYear[1];
+                $query->whereYear('created_at', $year)
+                    ->whereMonth('created_at', $monthNum);
+            }
+        }
+
         $transactions = $query->latest()->paginate(10)->withQueryString();
         // $transactions = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
         //     ->latest()
@@ -150,12 +169,22 @@ class CorRekapController extends BaseController
             });
 
         $transactions->setCollection($transformedTransactions);
-        $allTransactions = Transaction::with(['customer:id,name', 'items'])->latest()->get();
-        $currentMonth = Carbon::now()->month;
-        // buat summary perbulan
-        $monthlyTransactions = $allTransactions->filter(function ($transaction) use ($currentMonth) {
-            return Carbon::parse($transaction->created_at)->month === $currentMonth;
-        });
+
+        // Query untuk summary sesuai dengan filter bulan yang sama
+        $summaryQuery = Transaction::with(['customer:id,name', 'items']);
+
+        // Apply filter bulan yang sama untuk summary
+        if ($month !== '') {
+            $monthYear = explode('-', $month);
+            if (count($monthYear) === 2) {
+                $year = $monthYear[0];
+                $monthNum = $monthYear[1];
+                $summaryQuery->whereYear('created_at', $year)
+                    ->whereMonth('created_at', $monthNum);
+            }
+        }
+
+        $monthlyTransactions = $summaryQuery->get();
         $summary = [
             'total_transactions' => $monthlyTransactions->count(),
             'total_customers' => $monthlyTransactions->pluck('customer.name')->filter()->unique()->count(),

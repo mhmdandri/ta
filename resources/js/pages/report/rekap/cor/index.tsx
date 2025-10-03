@@ -31,6 +31,7 @@ interface Props {
         sales: string;
         status: string;
         search: string;
+        month: string;
     };
 }
 
@@ -42,11 +43,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function RekapCorIndex({ transactions, summary, filter: serverFilter }: Props) {
+    // Helper function untuk mendapatkan bulan current dalam format YYYY-MM
+    const getCurrentMonth = () => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    };
+
     const [filter, setFilter] = useState({
         // serverFilter = dari props backend (agar state sync ketika paginasi)
         status: serverFilter?.status || 'all',
         customer: serverFilter?.search || serverFilter?.customer || '',
         sales: serverFilter?.sales || 'all',
+        month: serverFilter?.month || getCurrentMonth(),
     });
 
     // Filter transactions based on current filter state
@@ -65,10 +73,28 @@ export default function RekapCorIndex({ transactions, summary, filter: serverFil
                 search: next.customer, // backend mapping ke 'search'
                 sales: next.sales,
                 status: next.status,
+                month: next.month,
             },
             { preserveState: true, preserveScroll: true, replace: true, only: ['transactions', 'summary', 'filter'] },
         );
     };
+
+    // Generate list bulan untuk dropdown (12 bulan terakhir)
+    const generateMonthOptions = () => {
+        const options = [];
+        const currentDate = new Date();
+
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+            const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const label = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+            options.push({ value, label });
+        }
+
+        return options;
+    };
+
+    const monthOptions = generateMonthOptions();
 
     // Get unique values for filter options
     const uniqueStatuses = [...new Set(transactions.data.map((t) => t.status))].filter(Boolean);
@@ -100,7 +126,10 @@ export default function RekapCorIndex({ transactions, summary, filter: serverFil
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Rekap COR</h1>
-                        <p className="mt-1 text-muted-foreground">Ringkasan dan daftar transaksi Change Order Request</p>
+                        <p className="mt-1 text-muted-foreground">
+                            Ringkasan dan daftar transaksi Change Order Request -{' '}
+                            {monthOptions.find((m) => m.value === filter.month)?.label || 'Bulan ini'}
+                        </p>
                     </div>
                     <Button className="gap-2">
                         <Download className="h-4 w-4" />
@@ -117,7 +146,9 @@ export default function RekapCorIndex({ transactions, summary, filter: serverFil
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{summary.total_transactions}</div>
-                            <p className="text-xs text-muted-foreground">Seluruh transaksi COR</p>
+                            <p className="text-xs text-muted-foreground">
+                                {monthOptions.find((m) => m.value === filter.month)?.label || 'Bulan ini'}
+                            </p>
                         </CardContent>
                     </Card>
 
@@ -164,7 +195,23 @@ export default function RekapCorIndex({ transactions, summary, filter: serverFil
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="month">Bulan</Label>
+                                <Select value={filter.month} onValueChange={(value) => handleFilterChange('month', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih bulan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {monthOptions.map((month) => (
+                                            <SelectItem key={month.value} value={month.value}>
+                                                {month.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="customer">Customer</Label>
                                 <Input

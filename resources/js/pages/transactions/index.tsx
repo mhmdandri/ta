@@ -1,11 +1,14 @@
 import Pagination from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import type { LinkType, Paginator, Transaction } from '@/types/types';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { Calendar, CreditCard, FileText, Package, PlusCircle, User } from 'lucide-react';
-import { useMemo } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Calendar, CreditCard, FileText, Filter, Package, PlusCircle, User } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Transactions', href: 'transactions' }];
 
@@ -32,7 +35,54 @@ function StatusPill({ type }: { type: Transaction['transaction_type'] }) {
 }
 
 export default function TransaksiIndex() {
-    const { transactions } = usePage<{ transactions: Paginator<Transaction> }>().props;
+    const { transactions, filter: serverFilter } = usePage<{
+        transactions: Paginator<Transaction>;
+        filter?: { month: string };
+    }>().props;
+
+    // Helper function untuk mendapatkan bulan current dalam format YYYY-MM
+    const getCurrentMonth = () => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    };
+
+    const [filter, setFilter] = useState({
+        month: serverFilter?.month || getCurrentMonth(),
+    });
+
+    // Generate list bulan untuk dropdown (12 bulan terakhir)
+    const generateMonthOptions = () => {
+        const options = [];
+        const currentDate = new Date();
+
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+            const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const label = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long' });
+            options.push({ value, label });
+        }
+
+        return options;
+    };
+
+    const monthOptions = generateMonthOptions();
+
+    const timer = useRef<number | undefined>(undefined);
+    const applyFilter = (next: typeof filter) => {
+        router.get(
+            window.location.pathname,
+            {
+                month: next.month,
+            },
+            { preserveState: true, preserveScroll: true, replace: true, only: ['transactions', 'filter'] },
+        );
+    };
+
+    const handleFilterChange = (key: keyof typeof filter, value: string) => {
+        const next = { ...filter, [key]: value };
+        setFilter(next);
+        applyFilter(next);
+    };
 
     // rows selalu array
     const rows = transactions?.data ?? [];
@@ -50,7 +100,10 @@ export default function TransaksiIndex() {
                 <div className="flex flex-col justify-between space-y-4 md:flex-row md:items-center md:space-y-0">
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manajemen Transaksi</h1>
-                        <p className="text-gray-500 dark:text-gray-400">Kelola semua transaksi penjualan dan penyewaan</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                            Kelola semua transaksi penjualan dan penyewaan -{' '}
+                            {monthOptions.find((m) => m.value === filter.month)?.label || 'Bulan ini'}
+                        </p>
                     </div>
                     <Button asChild className="gap-2 shadow-md">
                         <Link href="/transactions/create">
@@ -60,10 +113,44 @@ export default function TransaksiIndex() {
                     </Button>
                 </div>
 
+                {/* Filter Section */}
+                <Card className="bg-primary-foreground">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                            <Filter className="h-5 w-5" />
+                            Filter Data
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="month">Bulan</Label>
+                                <Select value={filter.month} onValueChange={(value) => handleFilterChange('month', value)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih bulan" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {monthOptions.map((month) => (
+                                            <SelectItem key={month.value} value={month.value}>
+                                                {month.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* Table Section */}
                 <div className="overflow-hidden rounded-xl bg-white shadow-sm dark:bg-neutral-800">
                     <div className="border-b border-gray-200 p-4 dark:border-neutral-700">
-                        <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Daftar Transaksi</h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-gray-800 dark:text-white">Daftar Transaksi</h2>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                                Menampilkan {transactions.from || 0} - {transactions.to || 0} dari {transactions.total || 0} transaksi
+                            </div>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
