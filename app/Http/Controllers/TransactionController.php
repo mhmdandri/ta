@@ -6,12 +6,14 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Models\ProductStock;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Services\OfferNumberGenerator;
 use Illuminate\Support\Facades\DB;
+use App\Models\ProductMovement;
 
 class TransactionController extends Controller
 {
@@ -123,6 +125,7 @@ class TransactionController extends Controller
             'no_po' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.kode_gudang' => 'required|string',
             'items.*.qty' => 'required|numeric|min:0.0001',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.discount' => 'required|numeric',
@@ -141,76 +144,194 @@ class TransactionController extends Controller
             : null;
 
         // 3) Jalankan semua di dalam satu transaksi DB
-        return DB::transaction(function () use ($validated, $rentalStart, $rentalEnd, $installDate, $uninstallDate, $gen) {
-            // 3a) Generate nomor penawaran berdasar rentalStart (agar reset per bulan konsisten)
-            $refDate = Carbon::parse($rentalStart);
-            $genRes   = $gen->generate('COR', 'K02', $refDate);
+        try {
+            return DB::transaction(function () use ($validated, $rentalStart, $rentalEnd, $installDate, $uninstallDate, $gen) {
+                // 3a) Generate nomor penawaran berdasar rentalStart (agar reset per bulan konsisten)
+                $refDate = Carbon::parse($rentalStart);
+                $genRes   = $gen->generate('COR', 'K02', $refDate);
 
-            // 3b) (Opsional tapi disarankan) Recalculate di server untuk menghindari manipulasi dari client
-            $sumPricelist = 0;
-            $sumNet       = 0;
-            $sumNetNet    = 0;
-            // $processedItems = $this->applyWarehouseLogic($validated['items']);
-            $jasa  = $this->getAllServicePrices($validated['items']);
-            foreach ($validated['items'] as $it) {
-                $sumPricelist += ($it['price'] * $it['qty']);
-                $sumNet       += $it['net_price']; // total harga net
-                $sumNetNet    += $it['net_net'];
+                // 3b) (Opsional tapi disarankan) Recalculate di server untuk menghindari manipulasi dari client
+                $sumPricelist = 0;
+                $sumNet       = 0;
+                $sumNetNet    = 0;
+                // $processedItems = $this->applyWarehouseLogic($validated['items']);
+                $jasa  = $this->getAllServicePrices($validated['items']);
+                foreach ($validated['items'] as $it) {
+                    $sumPricelist += ($it['price'] * $it['qty']);
+                    $sumNet       += $it['net_price']; // total harga net
+                    $sumNetNet    += $it['net_net'];
+                }
+                // 3c) Simpan transaksi
+                $transaction = Transaction::create([
+                    'customer_id' => $validated['customer_id'],
+                    'sales_id' => $validated['sales_id'],
+                    'no_penawaran' => $genRes['no_penawaran'],
+                    'no_po' => $validated['no_po'] ?? null,
+                    'termin_of_payment' => $validated['termin_of_payment'],
+                    'payment' => $validated['payment'],
+                    'operate_fee' => $jasa['operate_fee'], // biaya operasi (jika ada)
+                    'jasa_kirim' => $jasa['jasa_kirim'], // biaya kirim (jika ada)
+                    'jasa_sticker' => $jasa['jasa_sticker'], // biaya
+                    'total_pricelist' => $validated['total_pricelist'], //$sumPricelist,          // override dengan kalkulasi server
+                    'price_deal' => $validated['price_deal'], //$priceDeal,
+                    'total_discount' => $validated['total_discount'], //$totalDiscount,
+                    'extra_discount' => $validated['extra_discount'], //$extraDiscount,
+                    'total_net' => $validated['total_net'], //$totalNet,
+                    'total_net_net' => $validated['total_net_net'], //$totalNetNet,
+                    'is_ppn' => $validated['is_ppn'], //$isPpn,
+                    'ppn_value' => $validated['ppn_value'], //$ppnValue,
+                    'total_final' => $validated['total_final'], //$totalFinal,
+                    'transaction_type' => $validated['transaction_type'],
+                    'rental_start' => $rentalStart,
+                    'rental_end' => $rentalEnd,
+                    'install_date' => $installDate,
+                    'uninstall_date' => $uninstallDate,
+                    'jenis_instalasi' => $validated['jenis_install'] ?? null,
+                    'location' => $validated['location'] ?? null,
+                    'delivery' => $validated['delivery'] ?? null,
+                    'description' => $validated['description'] ?? null,
+                    'rental_duration' => $validated['rental_duration'],
+                    'status' => 'submitted',
+                    'pic' => $validated['pic'] ?? null,
+                    'offer_counter_id' => $genRes['offer_counter_id'],   // pakai ini jika kamu simpan relasi counter
+                ]);
+
+                // 3d) Simpan items (pakai createMany biar ringkas)
+                // // $items = array_map(function ($it) {
+                // //     return [
+                // //         'product_id' => $it['product_id'],
+                // //         'qty' => $it['qty'],
+                // //         'price_pricelist' => $it['price'],
+                // //         'price_deal' => $it['net_price'],
+                // //         'discount' => $it['discount'],
+                // //         'discount_percent' => $it['discount_percent'],
+                // //         'net_net' => $it['net_net'],
+                // //         'created_at' => now(),
+                // //         'updated_at' => now(),
+                // //     ];
+                // // }, $validated['items']);
+
+                // $transaction->items()->createMany($items);
+                foreach ($validated['items'] as $it) {
+
+                    // 🔥 ambil stock sesuai gudang
+                    $stock = ProductStock::where('product_id', $it['product_id'])
+                        ->where('kode_gudang', $it['kode_gudang'])
+                        ->lockForUpdate() // 🔥 penting
+                        ->first();
+
+                    // ❗ VALIDASI
+                    if (!$stock) {
+                        throw new \Exception("Stock tidak ditemukan di gudang {$it['kode_gudang']}");
+                    }
+
+                    if ($stock->stock < $it['qty']) {
+                        throw new \Exception("Stock tidak cukup untuk produk {$it['product_id']} di gudang {$it['kode_gudang']}");
+                    }
+
+                    // 🔥 KURANGI STOCK
+                    $stock->decrement('stock', $it['qty']);
+                    ProductMovement::create([
+                        'product_id' => $it['product_id'],
+                        'kode_gudang' => $it['kode_gudang'],
+                        'qty' => $it['qty'],
+                        'type' => 'out',
+                        'transaction_id' => $transaction->id,
+                    ]);
+
+                    // 🔥 SIMPAN ITEM
+                    $transaction->items()->create([
+                        'product_id' => $it['product_id'],
+                        'kode_gudang' => $it['kode_gudang'], // 🔥 WAJIB
+                        'qty' => $it['qty'],
+                        'price_pricelist' => $it['price'],
+                        'price_deal' => $it['net_price'],
+                        'discount' => $it['discount'],
+                        'discount_percent' => $it['discount_percent'],
+                        'net_net' => $it['net_net'],
+                    ]);
+                }
+
+                return redirect()->route('transactions.index')->with('success', 'Berhasil tambahkan transaksi!');
+            });
+        } catch (\Exception $e) {
+            return back()->withErrors($e->getMessage());
+        }
+    }
+    public function returnItems(Request $request, Transaction $transaction)
+    {
+        $data = $request->validate([
+            'returns' => 'required|array',
+            'returns.*.product_id' => 'required|exists:products,id',
+            'returns.*.kode_gudang' => 'required|string',
+            'returns.*.qty' => 'required|numeric|min:0.01',
+        ]);
+
+        try {
+            DB::transaction(function () use ($data, $transaction) {
+
+                foreach ($data['returns'] as $ret) {
+
+                    $product = \App\Models\Product::find($ret['product_id']);
+
+                    // 🚫 SKIP JASA
+                    if ($product && $product->type === 'jasa') {
+                        continue;
+                    }
+
+                    $stock = ProductStock::where('product_id', $ret['product_id'])
+                        ->where('kode_gudang', $ret['kode_gudang'])
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$stock) {
+                        $stock = ProductStock::create([
+                            'product_id' => $ret['product_id'],
+                            'kode_gudang' => $ret['kode_gudang'],
+                            'stock' => 0,
+                        ]);
+                    }
+
+                    // 🔼 TAMBAH STOCK
+                    $stock->increment('stock', $ret['qty']);
+
+                    // 📝 LOG IN
+                    ProductMovement::create([
+                        'product_id' => $ret['product_id'],
+                        'kode_gudang' => $ret['kode_gudang'],
+                        'qty' => $ret['qty'],
+                        'type' => 'in',
+                        'transaction_id' => $transaction->id,
+                    ]);
+                }
+
+                // ✅ UPDATE STATUS
+                $transaction->update([
+                    'status' => 'completed'
+                ]);
+            });
+
+            return back()->with('success', 'Barang berhasil direturn');
+        } catch (\Exception $e) {
+            return back()->withErrors($e->getMessage());
+        }
+    }
+    public function confirm(Transaction $transaction)
+    {
+        try {
+            // hanya bisa confirm jika masih submitted
+            if ($transaction->status !== 'submitted') {
+                return back()->withErrors('Transaksi sudah dikonfirmasi atau tidak valid');
             }
-            // 3c) Simpan transaksi
-            $transaction = Transaction::create([
-                'customer_id' => $validated['customer_id'],
-                'sales_id' => $validated['sales_id'],
-                'no_penawaran' => $genRes['no_penawaran'],
-                'no_po' => $validated['no_po'] ?? null,
-                'termin_of_payment' => $validated['termin_of_payment'],
-                'payment' => $validated['payment'],
-                'operate_fee' => $jasa['operate_fee'], // biaya operasi (jika ada)
-                'jasa_kirim' => $jasa['jasa_kirim'], // biaya kirim (jika ada)
-                'jasa_sticker' => $jasa['jasa_sticker'], // biaya
-                'total_pricelist' => $validated['total_pricelist'], //$sumPricelist,          // override dengan kalkulasi server
-                'price_deal' => $validated['price_deal'], //$priceDeal,
-                'total_discount' => $validated['total_discount'], //$totalDiscount,
-                'extra_discount' => $validated['extra_discount'], //$extraDiscount,
-                'total_net' => $validated['total_net'], //$totalNet,
-                'total_net_net' => $validated['total_net_net'], //$totalNetNet,
-                'is_ppn' => $validated['is_ppn'], //$isPpn,
-                'ppn_value' => $validated['ppn_value'], //$ppnValue,
-                'total_final' => $validated['total_final'], //$totalFinal,
-                'transaction_type' => $validated['transaction_type'],
-                'rental_start' => $rentalStart,
-                'rental_end' => $rentalEnd,
-                'install_date' => $installDate,
-                'uninstall_date' => $uninstallDate,
-                'jenis_instalasi' => $validated['jenis_install'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'delivery' => $validated['delivery'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'rental_duration' => $validated['rental_duration'],
-                'status' => 'submitted',
-                'pic' => $validated['pic'] ?? null,
-                'offer_counter_id' => $genRes['offer_counter_id'],   // pakai ini jika kamu simpan relasi counter
+
+            $transaction->update([
+                'status' => 'confirmed'
             ]);
 
-            // 3d) Simpan items (pakai createMany biar ringkas)
-            $items = array_map(function ($it) {
-                return [
-                    'product_id' => $it['product_id'],
-                    'qty' => $it['qty'],
-                    'price_pricelist' => $it['price'],
-                    'price_deal' => $it['net_price'],
-                    'discount' => $it['discount'],
-                    'discount_percent' => $it['discount_percent'],
-                    'net_net' => $it['net_net'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }, $validated['items']);
-
-            $transaction->items()->createMany($items);
-
-            return redirect()->route('transactions.index')->with('success', 'Berhasil tambahkan transaksi!');
-        });
+            return back()->with('success', 'Transaksi berhasil dikonfirmasi');
+        } catch (\Exception $e) {
+            return back()->withErrors($e->getMessage());
+        }
     }
     public function show(Transaction $transaction)
     {

@@ -20,7 +20,7 @@ class CorRekapController extends BaseController
     private function determineMainWarehouse($items)
     {
         $warehouseCounts = $items->groupBy(function ($item) {
-            return $item->product->kode_gudang ?? '01';
+            return $item->kode_gudang ?? '01'; // ✅ FIX DI SINI
         })->map(function ($group) {
             return $group->sum('qty');
         });
@@ -50,7 +50,7 @@ class CorRekapController extends BaseController
         $query = Transaction::query()->with([
             'customer:id,name',
             'sales:id,name',
-            'items.product:id,code,name,description,type,price,stock,kode_gudang',
+            'items.product:id,code,name,description,type,price',
         ]);
 
         if ($search !== '') {
@@ -153,6 +153,7 @@ class CorRekapController extends BaseController
                             'price_deal' => (float) $item->price_deal,
                             'price_pricelist' => (float) $item->price_pricelist,
                             'price' => (float) $item->price,
+                            'kode_gudang' => $item->kode_gudang, // ✅ TAMBAH INI
                             'product' => [
                                 'id' => $item->product->id,
                                 'code' => $item->product->code,
@@ -160,8 +161,6 @@ class CorRekapController extends BaseController
                                 'description' => $item->product->description,
                                 'type' => $item->product->type,
                                 'price' => (float) $item->product->price,
-                                'stock' => (int) $item->product->stock,
-                                'kode_gudang' => $item->product->kode_gudang,
                             ],
                         ];
                     }),
@@ -203,7 +202,7 @@ class CorRekapController extends BaseController
     }
     public function show($id)
     {
-        $transaction = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price,stock,kode_gudang'])
+        $transaction = Transaction::with(['customer:id,name', 'sales:id,name', 'items.product:id,code,name,description,type,price'])
             ->findOrFail($id);
         $transformedTransaction = [
             'id' => $transaction->id,
@@ -266,6 +265,7 @@ class CorRekapController extends BaseController
                     'price_deal' => (float) $item->price_deal,
                     'price_pricelist' => (float) $item->price_pricelist,
                     'price' => (float) $item->price,
+                    'kode_gudang' => $item->kode_gudang, // ✅ TAMBAH INI
                     'product' => [
                         'id' => $item->product->id,
                         'code' => $item->product->code,
@@ -273,8 +273,6 @@ class CorRekapController extends BaseController
                         'description' => $item->product->description,
                         'type' => $item->product->type,
                         'price' => (float) $item->product->price,
-                        'stock' => (int) $item->product->stock,
-                        'kode_gudang' => $item->product->kode_gudang,
                     ],
                 ];
             }),

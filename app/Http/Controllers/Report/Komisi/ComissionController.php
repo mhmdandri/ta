@@ -187,7 +187,6 @@ class ComissionController extends BaseController
                     ->whereBetween('transactions.rental_start', [$startDate, $endDate]);
             })
             ->join('transaction_items', 'transaction_items.transaction_id', '=', 'transactions.id')
-            ->join('products', 'products.id', '=', 'transaction_items.product_id')
             ->where(function ($q) {
                 $q->where('users.role', 'sales')
                     ->orWhere(function ($qq) {
@@ -198,8 +197,8 @@ class ComissionController extends BaseController
             ->select([
                 'users.id as sales_id',
                 DB::raw('COALESCE(SUM(transaction_items.net_net), 0) as sum_net_net_all_items'),
-                DB::raw("COALESCE(SUM(CASE WHEN products.kode_gudang = '04' THEN transaction_items.net_net ELSE 0 END), 0) as sum_net_net_gdg_os"),
-                DB::raw("COALESCE(SUM(CASE WHEN products.kode_gudang = '02' THEN transaction_items.net_net ELSE 0 END), 0) as sum_net_net_gdg_cabang"),
+                DB::raw("COALESCE(SUM(CASE WHEN transaction_items.kode_gudang = '04' THEN transaction_items.net_net ELSE 0 END), 0) as sum_net_net_gdg_os"),
+                DB::raw("COALESCE(SUM(CASE WHEN transaction_items.kode_gudang = '02' THEN transaction_items.net_net ELSE 0 END), 0) as sum_net_net_gdg_cabang"),
             ])
             ->get()
             ->keyBy('sales_id');

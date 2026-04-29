@@ -12,6 +12,18 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
+    private function getTopRental($from, $to, $user)
+    {
+        $quety = DB::table("transaction_items as ti")->join("transactions as t", "ti.transaction_id", "=", "t.id")
+            ->join("products as p", "ti.product_id", "=", "p.id")
+            ->select("p.id", "p.name", DB::raw('SUM(CAST(ti.qty AS DECIMAL(10,2))) as total_qty'))
+            ->where("t.transaction_type", "rental")
+            ->whereBetween("t.rental_start", [$from, $to]);
+        if ($user->role === "sales") {
+            $quety->where("t.sales_id", $user->id);
+        }
+        return $quety->groupBy("p.id", "p.name")->orderByDesc("total_qty")->limit(10)->get();
+    }
     public function index()
     {
         $user = Auth::user();
@@ -96,6 +108,7 @@ class DashboardController extends Controller
             ->keyBy('week');
 
         $weeklyChart = [];
+        $topProducts = $this->getTopRental($from, $to, $user);
         for ($i = 1; $i <= 5; $i++) {
             $weeklyChart[] = [
                 'week'      => $i,
@@ -115,10 +128,10 @@ class DashboardController extends Controller
                     'dateField' => $dateField,
                     'dataChart' => $dataChart,
                 ],
+                'topProducts'  => $topProducts,
                 'role'           => $user->role,
             ]);
         }
-
         // admin/manager/spv/dll
         return Inertia::render('dashboard', [
             'summary'    => $globalSummary, // default tampil global
@@ -130,6 +143,7 @@ class DashboardController extends Controller
                 'dateField' => $dateField,
                 'dataChart'    => $dataChart,
             ],
+            'topProducts'  => $topProducts,
             'role'       => $user->role,
         ]);
     }

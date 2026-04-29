@@ -54,6 +54,11 @@ export default function FormAddProduct({ className = '', onSuccess, onCancel, is
         { value: 'jual', label: 'Jual' },
         { value: 'jasa', label: 'Jasa' },
     ];
+    useEffect(() => {
+        if (data.type === 'jasa') {
+            setData('kode_gudang', '01');
+        }
+    }, [data.type, setData]);
 
     const handleSubmit: FormEventHandler = (e) => {
         e.preventDefault();
@@ -147,6 +152,26 @@ export default function FormAddProduct({ className = '', onSuccess, onCancel, is
                                 </SelectContent>
                             </Select>
                             {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="kode_gudang">
+                                Gudang <span className="text-red-500">*</span>
+                            </Label>
+                            <Select
+                                value={data.kode_gudang}
+                                onValueChange={(value) => setData('kode_gudang', value)}
+                                disabled={processing || data.type === 'jasa'}
+                            >
+                                <SelectTrigger id="kode_gudang" className={errors.kode_gudang ? 'border-red-500' : ''}>
+                                    <SelectValue placeholder="Pilih gudang..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="01">Gudang 01</SelectItem>
+                                    <SelectItem value="02">Gudang 02</SelectItem>
+                                    <SelectItem value="04">Gudang 04</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {errors.kode_gudang && <p className="text-sm text-red-500">{errors.kode_gudang}</p>}
                         </div>
 
                         <div className="space-y-2 md:col-span-2">

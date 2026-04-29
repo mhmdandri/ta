@@ -34,6 +34,30 @@ function StatusPill({ type }: { type: Transaction['transaction_type'] }) {
     );
 }
 
+function StatusBadge({ status }: { status?: string }) {
+    let cls = '';
+    let label = status ?? '-';
+
+    switch (status) {
+        case 'submitted':
+            cls = 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+            label = 'Submitted';
+            break;
+        case 'confirmed':
+            cls = 'bg-blue-100 text-blue-800 border border-blue-300';
+            label = 'Confirmed';
+            break;
+        case 'completed':
+            cls = 'bg-green-100 text-green-800 border border-green-300';
+            label = 'Completed';
+            break;
+        default:
+            cls = 'bg-gray-100 text-gray-800 border border-gray-300';
+    }
+
+    return <span className={`rounded-full px-3 py-1 text-xs font-medium ${cls}`}>{label}</span>;
+}
+
 export default function TransaksiIndex() {
     const { transactions, filter: serverFilter } = usePage<{
         transactions: Paginator<Transaction>;
@@ -157,7 +181,7 @@ export default function TransaksiIndex() {
                         <table className="w-full">
                             <thead className="bg-gray-50 dark:bg-neutral-700/30">
                                 <tr>
-                                    {['No. Penawaran', 'Customer', 'Sales', 'Type', 'Grand Total', 'Durasi', 'Aksi'].map((head) => (
+                                    {['No. Penawaran', 'Customer', 'Sales', 'Type', 'Status', 'Grand Total', 'Durasi', 'Aksi'].map((head) => (
                                         <th
                                             key={head}
                                             scope="col"
@@ -184,6 +208,9 @@ export default function TransaksiIndex() {
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{t.sales?.name ?? '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <StatusPill type={t.transaction_type} />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <StatusBadge status={t.status} />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="font-medium text-gray-900 dark:text-white">

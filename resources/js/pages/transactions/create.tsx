@@ -110,6 +110,7 @@ export default function TransactionsCreate() {
         console.log(price);
         if (!selectedProduct) return;
         const day = dateRange.duration.days || 1;
+        const stock = selectedProduct?.stocks?.[0];
         let ttlpricelist = 0;
         if (day < 3) {
             ttlpricelist = price * quantity * day;
@@ -131,6 +132,7 @@ export default function TransactionsCreate() {
         console.log({ disc, persen });
         const newItem: Item = {
             product: selectedProduct,
+            kode_gudang: stock?.kode_gudang || '',
             qty: quantity,
             price: ttlpricelist || selectedProduct.price, // ambil dari input, kalau kosong fallback ke harga product
             discount: disc,
@@ -220,6 +222,7 @@ export default function TransactionsCreate() {
             pic: pic,
             items: items.map((item) => ({
                 product_id: item.product?.id,
+                kode_gudang: item.kode_gudang,
                 qty: item.qty,
                 price: item.price,
                 discount: item.discount,
@@ -408,7 +411,18 @@ export default function TransactionsCreate() {
                                     <div className="flex flex-col gap-2">
                                         <Label>Product</Label>
                                         <div className="flex items-center gap-2">
-                                            <ProductSelect value={selectedProduct} onChange={(product) => setSelectedProduct(product)} />
+                                            <ProductSelect
+                                                value={selectedProduct}
+                                                onChange={(product) => {
+                                                    const stock = product.stocks?.[0];
+
+                                                    setSelectedProduct({
+                                                        ...product,
+                                                        kode_gudang: stock?.kode_gudang,
+                                                        stock: stock?.stock,
+                                                    });
+                                                }}
+                                            />
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-2">
@@ -472,7 +486,7 @@ export default function TransactionsCreate() {
                             <tbody>
                                 {items.map((item, i) => (
                                     <tr key={i} className="border-t">
-                                        <td className="border p-2">{item.product?.kode_gudang}</td>
+                                        <td className="border p-2">{item.kode_gudang || '-'}</td>
                                         <td className="border p-2">{item.product?.name}</td>
                                         <td className="border p-2">
                                             <input

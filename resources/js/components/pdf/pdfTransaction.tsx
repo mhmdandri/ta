@@ -266,7 +266,7 @@ export default function PdfTransaction({ transaction }: PdfTransactionProps) {
                     ) : (
                         items.map((item: any, index: number) => (
                             <View key={index} style={styles.tableRow}>
-                                <Text style={styles.col1}>{item?.product?.kode_gudang ?? '-'}</Text>
+                                <Text style={styles.col1}>{item?.kode_gudang ?? '-'}</Text>
                                 <Text style={styles.col2}>{item?.product?.name ?? '-'}</Text>
                                 <Text style={styles.col3}>{transaction?.rental_duration ?? '-'}</Text>
                                 <Text style={styles.col4}>{item?.qty ?? 0}</Text>

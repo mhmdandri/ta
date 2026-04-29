@@ -29,6 +29,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // route customer
 Route::resource('customers', CustomerController::class)->middleware(['auth', 'verified']);
 
+Route::get('/product/rental', [ProductController::class, 'rental'])
+    ->name('product.rental')
+    ->middleware(['auth', 'verified']);
+
 // route product
 Route::resource('product', ProductController::class)->middleware(['auth', 'verified']);
 
@@ -63,24 +67,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/report/commisions', [ComissionController::class, 'index'])->name('report.commissions');
     Route::get('/report/commisions/export', [ComissionController::class, 'export'])->name('report.commissions.export');
 });
-
+Route::post('/transactions/{transaction}/return', [TransactionController::class, 'returnItems']);
+Route::post('/transactions/{transaction}/confirm', [TransactionController::class, 'confirm']);
 //API
 Route::get('/products/search', function (Request $request) {
     $q = $request->get('q', '');
-    $kodeGudang = $request->get('kode_gudang', '');
 
-    return Product::with(['priceList'])->when($q, function ($query) use ($q) {
-        return $query->where(function ($subQuery) use ($q) {
-            $subQuery->where('name', 'like', "%{$q}%")
-                ->orWhere('code', 'like', "%{$q}%");
-        });
-    })
+    $kodeGudang = $request->get('kode_gudang', '');
+    $kodeGudang = $kodeGudang !== ''
+        ? str_pad(trim($kodeGudang), 2, '0', STR_PAD_LEFT)
+        : '';
+    return Product::with([
+        'priceList',
+        'stocks' => function ($query) use ($kodeGudang) {
+            if ($kodeGudang) {
+                $query->where('kode_gudang', $kodeGudang);
+            }
+        }
+    ])
+        ->when($q, function ($query) use ($q) {
+            return $query->where(function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%");
+            });
+        })
         ->when($kodeGudang, function ($query) use ($kodeGudang) {
-            return $query->where('kode_gudang', $kodeGudang);
+            return $query->whereHas('stocks', function ($q) use ($kodeGudang) {
+                $q->where('kode_gudang', $kodeGudang)
+                    ->where('stock', '>', 0);
+            });
         })
         ->limit(10)
         ->get();
 });
+Route::post('/stock/transfer', [ProductController::class, 'transfer']);
 Route::get('/customer/search', function (Request $request) {
     $q = $request->get('q', '');
     return Customer::where('name', 'like', "%{$q}%")

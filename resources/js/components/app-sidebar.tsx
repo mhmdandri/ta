@@ -6,7 +6,7 @@ import { dashboard } from '@/routes';
 import customers from '@/routes/customers';
 import { SharedData, type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, DollarSign, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, Target, User2 } from 'lucide-react';
+import { Building2, DollarSign, LayoutGrid, NotebookPen, Package, PackagePlus, Receipt, Target, TimerIcon, User2 } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -52,6 +52,11 @@ export function AppSidebar() {
                 },
                 ...(isAdminUp
                     ? [
+                          {
+                              title: 'Daftar Rental Produk',
+                              href: '/product/rental',
+                              icon: TimerIcon,
+                          },
                           {
                               title: 'Tambah Produk',
                               href: '/product/create',

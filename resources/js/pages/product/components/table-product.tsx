@@ -13,6 +13,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Edit, Package, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import DeleteProduct from './delete-product';
+import DetailProdukModal from './detail-produk-modal';
 
 type PageProps = {
     products: Paginator<Product>;
@@ -41,6 +42,8 @@ export default function TableProduct({ className = '', showActions = true, onEdi
     const [filter, setFilter] = useState(filters);
     // Debounce untuk search
     const debounceRef = useRef<number | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [openDetail, setOpenDetail] = useState(false);
     const applyFilters = (next: typeof filter, replace = true) => {
         router.get(
             window.location.pathname, // tetap di halaman ini
@@ -88,7 +91,7 @@ export default function TableProduct({ className = '', showActions = true, onEdi
         }
     };
     const getStockBadgeVariant = (stock: number) => {
-        if (stock === 0) return 'destructive';
+        if (stock === 0) return 'outline';
         if (stock <= 10) return 'outline';
         return 'default';
     };
@@ -197,64 +200,86 @@ export default function TableProduct({ className = '', showActions = true, onEdi
                             </TableHeader>
                             <TableBody>
                                 {source.length > 0 ? (
-                                    source.map((product) => (
-                                        <TableRow key={product.id} className="group">
-                                            <TableCell className="font-medium">{product.code}</TableCell>
-                                            <TableCell className="font-medium">{product.name}</TableCell>
-                                            <TableCell className="max-w-xs truncate text-muted-foreground">{product.description || '-'}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={getTypeBadgeVariant(product.type)}>
-                                                    {product.type.charAt(0).toUpperCase() + product.type.slice(1)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-left font-medium">{formatRupiah(product.price, false)}</TableCell>
-                                            <TableCell className="text-center">
-                                                {product.type === 'jual' ? (
-                                                    <Badge variant={getStockBadgeVariant(product.stock)}>{product.stock}</Badge>
-                                                ) : (
-                                                    <span className="text-muted-foreground">-</span>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="rounded bg-muted px-2 py-1 font-mono text-xs">{product.kode_gudang}</span>
-                                            </TableCell>
-                                            {showActions && (
+                                    source.map((product) => {
+                                        const totalStock = product.stocks?.reduce((sum, s) => sum + s.stock, 0) ?? 0;
+                                        return (
+                                            <TableRow
+                                                key={product.id}
+                                                className="group cursor-pointer"
+                                                onClick={() => {
+                                                    setSelectedProduct(product);
+                                                    setOpenDetail(true);
+                                                }}
+                                            >
+                                                <TableCell className="font-medium">{product.code}</TableCell>
+                                                <TableCell className="font-medium">{product.name}</TableCell>
+                                                <TableCell className="max-w-xs truncate text-muted-foreground">
+                                                    {product.description || '-'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={getTypeBadgeVariant(product.type)}>
+                                                        {product.type.charAt(0).toUpperCase() + product.type.slice(1)}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-left font-medium">
+                                                    {formatRupiah(product.price_list?.price_1_day ?? 0, false)}
+                                                </TableCell>
                                                 <TableCell className="text-center">
-                                                    <div className="flex items-center justify-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
-                                                        {onEdit && (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => onEdit(product)}
-                                                                className="h-8 w-8 p-0"
-                                                                disabled={!isAdminUp}
-                                                            >
-                                                                <Edit className="h-4 w-4" />
-                                                            </Button>
-                                                        )}
-                                                        {/* Pakai ConfirmDeleteDialog */}
-                                                        <DeleteProduct
-                                                            trigger={
+                                                    <Badge variant={getStockBadgeVariant(totalStock)}>{totalStock}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {product.stocks
+                                                            ?.filter((s) => Number(s.stock) > 0) // 🔥 INI KUNCINYA
+                                                            .map((s) => (
+                                                                <span key={s.kode_gudang} className="rounded bg-muted px-2 py-1 text-xs">
+                                                                    {s.kode_gudang}
+                                                                </span>
+                                                            ))}
+                                                    </div>
+                                                </TableCell>
+                                                {showActions && (
+                                                    <TableCell className="text-center">
+                                                        <div className="flex items-center justify-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+                                                            {onEdit && (
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        onEdit(product);
+                                                                    }}
+                                                                    className="h-8 w-8 p-0"
                                                                     disabled={!isAdminUp}
                                                                 >
-                                                                    <Trash2 className="h-4 w-4" />
+                                                                    <Edit className="h-4 w-4" />
                                                                 </Button>
-                                                            }
-                                                            title="Hapus Produk?"
-                                                            description={`Anda akan menghapus produk "${product.name}" (${product.code}). Tindakan ini tidak dapat dibatalkan.`}
-                                                            confirmText="Ya, Hapus"
-                                                            cancelText="Batal"
-                                                            onConfirm={() => handleDelete(product)}
-                                                        />
-                                                    </div>
-                                                </TableCell>
-                                            )}
-                                        </TableRow>
-                                    ))
+                                                            )}
+                                                            {/* Pakai ConfirmDeleteDialog */}
+                                                            <DeleteProduct
+                                                                trigger={
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        disabled={!isAdminUp}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </Button>
+                                                                }
+                                                                title="Hapus Produk?"
+                                                                description={`Anda akan menghapus produk "${product.name}" (${product.code}). Tindakan ini tidak dapat dibatalkan.`}
+                                                                confirmText="Ya, Hapus"
+                                                                cancelText="Batal"
+                                                                onConfirm={() => handleDelete(product)}
+                                                            />
+                                                        </div>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        );
+                                    })
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={showActions ? 8 : 7} className="h-24 text-center">
@@ -269,6 +294,7 @@ export default function TableProduct({ className = '', showActions = true, onEdi
             </Card>
 
             <Pagination links={products.links || []} />
+            <DetailProdukModal open={openDetail} onOpenChange={setOpenDetail} product={selectedProduct} />
         </div>
     );
 }

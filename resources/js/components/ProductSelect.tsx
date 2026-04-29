@@ -165,7 +165,14 @@ export function ProductSelect({ value, onChange, warehouseCode, onWarehouseCodeC
                                     key={`${p.id}-${p.kode_gudang}`} // Unique key dengan kombinasi id dan kode_gudang
                                     value={`${p.name}-${p.kode_gudang}`} // Unique value
                                     onSelect={() => {
-                                        onChange(p);
+                                        const stock = p.stocks?.[0];
+
+                                        onChange({
+                                            ...p,
+                                            kode_gudang: stock?.kode_gudang,
+                                            stock: stock?.stock,
+                                        });
+
                                         setOpen(false);
                                     }}
                                 >
@@ -174,8 +181,8 @@ export function ProductSelect({ value, onChange, warehouseCode, onWarehouseCodeC
                                         <span className="font-medium">{p.name}</span>
                                         <div className="flex gap-4 text-xs text-muted-foreground">
                                             <span>Code: {p.code}</span>
-                                            <span>Gudang: {p.kode_gudang}</span>
-                                            <span>Stock: {p.stock}</span>
+                                            <span>Gudang: {p.stocks?.[0]?.kode_gudang ?? '-'}</span>
+                                            <span>Stock: {p.stocks?.[0]?.stock ?? 0}</span>
                                         </div>
                                     </div>
                                 </CommandItem>

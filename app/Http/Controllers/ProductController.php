@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductStock;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends BaseController
 {
@@ -39,10 +42,15 @@ class ProductController extends BaseController
             })
             // filter WAJIB: kode_gudang
             ->when($kode !== '', function ($q) use ($kode) {
-                $q->where('kode_gudang', $kode);
+                $q->whereHas('stocks', function ($s) use ($kode) {
+                    $s->where('kode_gudang', $kode);
+                });
             })
             ->limit(10)
-            ->get(['id', 'name', 'kode_gudang']);
+            ->with(['stocks' => function ($q) use ($kode) {
+                $q->where('kode_gudang', $kode);
+            }])
+            ->get(['id', 'name', 'code']);
 
         return response()->json($products);
     }
@@ -55,7 +63,8 @@ class ProductController extends BaseController
             'kode_gudang' => $request->string('kode_gudang')->toString() ?: 'all',
         ];
 
-        $query = Product::query();
+        //$query = Product::query();
+        $query = Product::with('stocks', 'priceList');
 
         if ($filters['search']) {
             $s = $filters['search'];
@@ -70,17 +79,19 @@ class ProductController extends BaseController
         }
 
         if ($filters['kode_gudang'] !== 'all') {
-            $query->where('kode_gudang', $filters['kode_gudang']);
+            $query->whereHas('stocks', function ($q) use ($filters) {
+                $q->where('kode_gudang', $filters['kode_gudang']);
+            });
         }
 
         // paginate SETELAH filter -> total mencerminkan total hasil filter (bukan halaman aktif)
-        $products = $query->orderBy('kode_gudang')
+        $products = $query->orderBy('code')
             ->paginate(10)
             ->withQueryString(); // penting agar pagination menyertakan query filter
 
         // opsi dropdown (distinct dari seluruh data)
         $types = Product::query()->distinct()->pluck('type');
-        $warehouses = Product::query()->distinct()->pluck('kode_gudang');
+        $warehouses = ProductStock::query()->distinct()->pluck('kode_gudang');
 
         return Inertia::render('product/index', [
             'products'    => $products,
@@ -112,11 +123,12 @@ class ProductController extends BaseController
                 'string',
                 'max:50',
                 // kalau unique-nya kombinasi code + kode_gudang:
-                Rule::unique('products')->where(fn($q) => $q->where('kode_gudang', $request->input('kode_gudang')))
+                Rule::unique('products', 'code')
             ],
             'description' => 'nullable|string',
             'type' => 'required|string|in:sewa,jual,jasa',
             'stock' => 'required|integer|min:0',
+            'kode_gudang' => 'required|string|in:01,02,04',
             'price_1_day' => 'required|numeric|min:0',
             'price_3_days' => 'required|numeric|min:0',
             'price_5_days' => 'required|numeric|min:0',
@@ -129,29 +141,57 @@ class ProductController extends BaseController
         $productPrice = ($isJual || $isJasa) ? ($validatedData['price_1_day'] ?? 0) : 0;
 
         try {
-            foreach ($this->warehouses as $warehouse) {
-
-                $exists = Product::where('code', $validatedData['code'])
-                    ->where('kode_gudang', $warehouse)->exists();
-                if ($exists) {
-                    continue;
-                }
-                $product = Product::create([
-                    'name' => $validatedData['name'],
-                    'code' => $validatedData['code'],
-                    'description' => $validatedData['description'],
-                    'type' => $validatedData['type'],
-                    'kode_gudang' => $warehouse,
-                    'price' => $productPrice,
+            // foreach ($this->warehouses as $warehouse) {
+            //     $exists = Product::where('code', $validatedData['code'])
+            //         ->where('kode_gudang', $warehouse)->exists();
+            //     if ($exists) {
+            //         continue;
+            //     }
+            //     $product = Product::create([
+            //         'name' => $validatedData['name'],
+            //         'code' => $validatedData['code'],
+            //         'description' => $validatedData['description'],
+            //         'type' => $validatedData['type'],
+            //         'kode_gudang' => $warehouse,
+            //         'price' => $productPrice,
+            //         'stock' => $validatedData['stock'],
+            //     ]);
+            //     $product->priceList()->create([
+            //         'price_1_day' => $validatedData['price_1_day'],
+            //         'price_3_days' => $validatedData['price_3_days'] ?? 0,
+            //         'price_5_days' => $validatedData['price_5_days'] ?? 0,
+            //         'price_7_days' => $validatedData['price_7_days'] ?? 0,
+            //         'price_10_days' => $validatedData['price_10_days'] ?? 0,
+            //         'price_30_days' => $validatedData['price_30_days'] ?? 0,
+            //     ]);
+            // }
+            $product = Product::create([
+                'name' => $validatedData['name'],
+                'code' => $validatedData['code'],
+                'description' => $validatedData['description'],
+                'type' => $validatedData['type'],
+                'price' => $productPrice,
+            ]);
+            $product->priceList()->create([
+                'price_1_day' => $validatedData['price_1_day'],
+                'price_3_days' => $validatedData['price_3_days'] ?? 0,
+                'price_5_days' => $validatedData['price_5_days'] ?? 0,
+                'price_7_days' => $validatedData['price_7_days'] ?? 0,
+                'price_10_days' => $validatedData['price_10_days'] ?? 0,
+                'price_30_days' => $validatedData['price_30_days'] ?? 0,
+            ]);
+            if ($validatedData['type'] === 'jasa') {
+                // hanya gudang 01
+                ProductStock::create([
+                    'product_id' => $product->id,
+                    'kode_gudang' => '01',
                     'stock' => $validatedData['stock'],
                 ]);
-                $product->priceList()->create([
-                    'price_1_day' => $validatedData['price_1_day'],
-                    'price_3_days' => $validatedData['price_3_days'] ?? 0,
-                    'price_5_days' => $validatedData['price_5_days'] ?? 0,
-                    'price_7_days' => $validatedData['price_7_days'] ?? 0,
-                    'price_10_days' => $validatedData['price_10_days'] ?? 0,
-                    'price_30_days' => $validatedData['price_30_days'] ?? 0,
+            } else {
+                ProductStock::create([
+                    'product_id' => $product->id,
+                    'kode_gudang' => $validatedData['kode_gudang'],
+                    'stock' => $validatedData['stock'],
                 ]);
             }
             return redirect()->route('product.index')
@@ -166,9 +206,65 @@ class ProductController extends BaseController
     /**
      * Display the specified resource.
      */
+    public function rental(Request $request)
+    {
+        $today = now();
+
+        $transactions = Transaction::with([
+            'customer',
+            'items' => function ($q) {
+                $q->select(
+                    'id',
+                    'transaction_id',
+                    'product_id',
+                    'qty',
+                    'kode_gudang' // 🔥 WAJIB
+                )->with('product:id,name,code,type');
+            },
+        ])->where('status', 'confirmed')
+            ->whereDate('rental_end', '>=', now()->subDays(30))
+            ->orderBy('rental_end', 'asc')
+            ->get();
+
+        return Inertia::render('product/rental', [
+            'transactions' => $transactions
+        ]);
+    }
     public function show(Product $product)
     {
         //
+    }
+
+    public function transfer(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'from_kode_gudang' => 'required',
+            'to_kode_gudang' => 'required|different:from_kode_gudang',
+            'qty' => 'required|integer|min:1',
+        ]);
+
+        DB::transaction(function () use ($request) {
+
+            // ✅ KURANGI DARI GUDANG ASAL
+            DB::table('product_stocks')
+                ->where('product_id', $request->product_id)
+                ->where('kode_gudang', $request->from_kode_gudang)
+                ->decrement('stock', $request->qty);
+
+            // ✅ TAMBAH KE GUDANG TUJUAN
+            DB::table('product_stocks')->updateOrInsert(
+                [
+                    'product_id' => $request->product_id,
+                    'kode_gudang' => $request->to_kode_gudang,
+                ],
+                [
+                    'stock' => DB::raw("COALESCE(stock,0) + {$request->qty}")
+                ]
+            );
+        });
+
+        return back()->with('success', 'Transfer berhasil');
     }
 
     /**
@@ -176,7 +272,7 @@ class ProductController extends BaseController
      */
     public function edit(Product $product)
     {
-        $product->load('priceList');
+        $product->load(['priceList', 'stocks']);
 
         return Inertia::render('product/edit', [
             'product' => [
@@ -185,8 +281,7 @@ class ProductController extends BaseController
                 'code' => $product->code,
                 'description' => $product->description,
                 'type' => $product->type,
-                'kode_gudang' => $product->kode_gudang,
-                'stock' => $product->stock,
+                'stocks' => $product->stocks,
                 'price_list' => $product->priceList ? [
                     'price_1_day' => $product->priceList->price_1_day,
                     'price_3_days' => $product->priceList->price_3_days,
@@ -237,8 +332,36 @@ class ProductController extends BaseController
             'description' => $validatedData['description'],
             'type' => $validatedData['type'],
             'price' => $productPrice,
-            'stock' => $validatedData['stock'],
         ]);
+        if ($validatedData['type'] === 'jasa') {
+            // hapus selain gudang 01
+            ProductStock::where('product_id', $product->id)
+                ->where('kode_gudang', '!=', '01')
+                ->delete();
+
+            // update / create gudang 01
+            ProductStock::updateOrCreate(
+                [
+                    'product_id' => $product->id,
+                    'kode_gudang' => '01',
+                ],
+                [
+                    'stock' => $validatedData['stock'],
+                ]
+            );
+        } else {
+            foreach ($this->warehouses as $warehouse) {
+                ProductStock::updateOrCreate(
+                    [
+                        'product_id' => $product->id,
+                        'kode_gudang' => $warehouse,
+                    ],
+                    [
+                        'stock' => $validatedData['stock'],
+                    ]
+                );
+            }
+        }
 
         // Update or create price list
         $product->priceList()->updateOrCreate(

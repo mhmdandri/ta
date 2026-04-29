@@ -1,6 +1,8 @@
 import PdfTransaction from '@/components/pdf/pdfTransaction';
+import { AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -9,12 +11,13 @@ import { formatPercent, formatRupiah } from '@/lib/formatRupiah';
 import { terbilangID } from '@/lib/formatTerbilang';
 import { type BreadcrumbItem } from '@/types';
 import type { Transaction } from '@/types/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { BlobProvider, PDFDownloadLink } from '@react-pdf/renderer';
 import {
     BadgeDollarSign,
     BarChart3,
     Calendar,
+    Check,
     Clock,
     CreditCard,
     Download,
@@ -27,7 +30,7 @@ import {
     User,
     Warehouse,
 } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Transaksi', href: '/transactions' },
@@ -58,9 +61,9 @@ function formatAddress(addr?: string | null) {
 
 export default function TransaksiShow() {
     const { transaction } = usePage<{ transaction: Transaction & any }>().props;
-
+    const [openConfirm, setOpenConfirm] = useState(false);
     const items: any[] = transaction?.items ?? [];
-    const day = transaction.rental_duration;
+    //const day = transaction.rental_duration;
 
     // Helper function untuk menghitung data berdasarkan kode gudang
     const getWarehouseData = (kodeGudang: string) => {
@@ -76,15 +79,28 @@ export default function TransaksiShow() {
     };
 
     // Data untuk setiap gudang
-    const gudangKMJ = getWarehouseData('01');
-    const gudangCabang = getWarehouseData('02');
+    //const gudangKMJ = getWarehouseData('01');
+    //const gudangCabang = getWarehouseData('02');
     const gudangOS = getWarehouseData('04');
 
     // Hitung NetNet minus OS (KMJ + Cabang)
     const netNetMinusOS = transaction?.total_net_net - gudangOS.value;
 
-    const subtotalNet = transaction?.total_net ?? items.reduce((acc, it) => acc + (it.net_price ?? it.price_deal ?? 0), 0);
+    //const subtotalNet = transaction?.total_net ?? items.reduce((acc, it) => acc + (it.net_price ?? it.price_deal ?? 0), 0);
     const discountPersen = (transaction.total_pricelist - transaction.total_net_net) / transaction.total_pricelist;
+    const formatStatus = (status?: string) => {
+        switch (status) {
+            case 'submitted':
+                return 'Submitted';
+            case 'confirmed':
+                return 'Confirmed';
+            case 'completed':
+                return 'Completed';
+            default:
+                return status ?? '-';
+        }
+    };
+    const textStatus = formatStatus(transaction.status);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -96,10 +112,22 @@ export default function TransaksiShow() {
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">Detail Transaksi</h1>
                         <p className="text-muted-foreground">No. COR: {transaction?.no_penawaran || '-'}</p>
+                        <p className="text-muted-foreground">
+                            Status:
+                            <span className="ml-2 font-semibold">{textStatus}</span>
+                        </p>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
+                        <Button
+                            className="gap-2 bg-green-500 hover:bg-green-600"
+                            onClick={() => setOpenConfirm(true)}
+                            disabled={transaction.status !== 'submitted'}
+                        >
+                            <Check className="h-4 w-4" />
+                            Confirm Rental
+                        </Button>
                         <PDFDownloadLink
                             document={<PdfTransaction transaction={transaction} />}
                             fileName={`COR-${transaction?.no_penawaran || 'transaksi'}.pdf`}
@@ -113,7 +141,7 @@ export default function TransaksiShow() {
                         </PDFDownloadLink>
 
                         <BlobProvider document={<PdfTransaction transaction={transaction} />}>
-                            {({ url, loading, error }) =>
+                            {({ url, loading }) =>
                                 url ? (
                                     <Button variant="outline" className="gap-2" onClick={() => window.open(url, '_blank')}>
                                         <Eye className="h-4 w-4" />
@@ -188,7 +216,7 @@ export default function TransaksiShow() {
                             <Table>
                                 <TableHeader className="bg-muted/50">
                                     <TableRow>
-                                        <TableHead className="w-[80px]">Gudang</TableHead>
+                                        <TableHead className="w-20">Gudang</TableHead>
                                         <TableHead>Nama Barang</TableHead>
                                         <TableHead className="text-center">Hari</TableHead>
                                         <TableHead className="text-center">Qty</TableHead>
@@ -208,7 +236,7 @@ export default function TransaksiShow() {
                                     ) : (
                                         items.map((it, i) => (
                                             <TableRow key={i} className={i % 2 === 0 ? 'bg-muted/30' : ''}>
-                                                <TableCell className="font-medium">{it?.product?.kode_gudang ?? '-'}</TableCell>
+                                                <TableCell className="font-medium">{it?.kode_gudang ?? '-'}</TableCell>
                                                 <TableCell>{it?.product?.name ?? '-'}</TableCell>
                                                 <TableCell className="text-center">{transaction?.rental_duration ?? '-'}</TableCell>
                                                 <TableCell className="text-center">{it?.qty ?? 0}</TableCell>
@@ -384,6 +412,31 @@ export default function TransaksiShow() {
                         </div>
                     </CardContent>
                 </Card>
+                <Dialog open={openConfirm} onOpenChange={setOpenConfirm}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Konfirmasi Rental</DialogTitle>
+                        </DialogHeader>
+
+                        <p className="text-sm text-muted-foreground">Yakin ingin konfirmasi transaksi ini?</p>
+
+                        <AlertDialogFooter className="mt-4">
+                            <Button variant="outline" onClick={() => setOpenConfirm(false)}>
+                                Batal
+                            </Button>
+
+                            <Button
+                                className="bg-green-500 hover:bg-green-600"
+                                onClick={() => {
+                                    router.post(`/transactions/${transaction.id}/confirm`);
+                                    setOpenConfirm(false);
+                                }}
+                            >
+                                Ya, Konfirmasi
+                            </Button>
+                        </AlertDialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </AppLayout>
     );

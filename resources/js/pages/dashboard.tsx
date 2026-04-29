@@ -1,4 +1,5 @@
 import ChartBarMultiple from '@/components/BarChart';
+import TopChart from '@/components/top-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatRupiah } from '@/lib/formatRupiah';
@@ -6,6 +7,7 @@ import { SharedData, type BreadcrumbItem } from '@/types';
 import { Summary } from '@/types/types';
 import { Head, usePage } from '@inertiajs/react';
 import { TrendingUp, Users } from 'lucide-react';
+import { useEffect } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -14,18 +16,31 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type TopProduct = {
+    id: number;
+    name: string;
+    total_qty: number;
+};
+
 type Props = {
     summary: Summary;
     globalSummary: Summary;
     weeklyChart: any;
     weeklyMeta: any;
     role: string;
+    topProducts: TopProduct[];
 };
 
-export default function Dashboard({ summary, weeklyChart, weeklyMeta, role }: Props) {
+export default function Dashboard({ summary, weeklyChart, weeklyMeta, role, topProducts }: Props) {
     const { auth } = usePage<SharedData>().props;
     const isSales = auth.user?.role === 'sales';
     const isAdminUp = auth.user?.role === 'admin' || auth.user?.role === 'spv' || auth.user?.role === 'manager' || auth.user?.role === 'gm';
+    useEffect(() => {
+        console.log('Summary:', summary);
+        console.log('Weekly Chart:', weeklyChart);
+        console.log('Weekly Meta:', weeklyMeta);
+        console.log('Top Products:', topProducts);
+    }, [summary, weeklyChart, weeklyMeta, topProducts]);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -126,7 +141,7 @@ export default function Dashboard({ summary, weeklyChart, weeklyMeta, role }: Pr
                     <ChartBarMultiple weeklyChart={weeklyChart} weeklyMeta={weeklyMeta} role={role} />
                 </div>
                 <div className="w-1/2">
-                    <ChartBarMultiple weeklyChart={weeklyChart} weeklyMeta={weeklyMeta} role={role} />
+                    <TopChart data={topProducts} />
                 </div>
             </div>
 

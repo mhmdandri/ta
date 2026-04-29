@@ -1,4 +1,8 @@
 // types.ts
+export type ProductStock = {
+    kode_gudang: string;
+    stock: number;
+};
 export type Product = {
     id: number;
     code: string;
@@ -6,9 +10,10 @@ export type Product = {
     description?: string;
     type: 'jual' | 'sewa' | 'jasa';
     price: number;
-    stock: number;
-    kode_gudang: string;
+    stock?: number;
+    kode_gudang?: string;
     price_list?: Pricelist;
+    stocks?: ProductStock[];
 };
 
 export type Pricelist = {
@@ -104,6 +109,7 @@ export type PaginationProps = {
 
 export type Item = {
     product: Product | null;
+    kode_gudang: string;
     qty: number;
     price: number;
     discount: number;

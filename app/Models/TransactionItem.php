@@ -16,6 +16,7 @@ class TransactionItem extends Model
         'discount',
         'discount_percent',
         'net_net',
+        'kode_gudang',
     ];
 
     //  Relasi ke transaksi
