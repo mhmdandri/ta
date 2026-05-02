@@ -9,7 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDate, formatOnlyDate, formatOnlyTime } from '@/lib/formatDateSafe';
 import { formatPercent, formatRupiah } from '@/lib/formatRupiah';
 import { terbilangID } from '@/lib/formatTerbilang';
-import { type BreadcrumbItem } from '@/types';
+import { SharedData, type BreadcrumbItem } from '@/types';
 import type { Transaction } from '@/types/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { BlobProvider, PDFDownloadLink } from '@react-pdf/renderer';
@@ -60,6 +60,8 @@ function formatAddress(addr?: string | null) {
 }
 
 export default function TransaksiShow() {
+    const { auth } = usePage<SharedData>().props;
+    const isAdmin = auth.user?.role === 'admin' || auth.user?.role === 'manager' || auth.user?.role === 'gm' || auth.user?.role === 'spv';
     const { transaction } = usePage<{ transaction: Transaction & any }>().props;
     const [openConfirm, setOpenConfirm] = useState(false);
     const items: any[] = transaction?.items ?? [];
@@ -120,14 +122,17 @@ export default function TransaksiShow() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            className="gap-2 bg-green-500 hover:bg-green-600"
-                            onClick={() => setOpenConfirm(true)}
-                            disabled={transaction.status !== 'submitted'}
-                        >
-                            <Check className="h-4 w-4" />
-                            Confirm Rental
-                        </Button>
+                        {isAdmin && (
+                            <Button
+                                className="gap-2 bg-green-500 hover:bg-green-600"
+                                onClick={() => setOpenConfirm(true)}
+                                disabled={transaction.status !== 'submitted'}
+                            >
+                                <Check className="h-4 w-4" />
+                                Confirm Rental
+                            </Button>
+                        )}
+
                         <PDFDownloadLink
                             document={<PdfTransaction transaction={transaction} />}
                             fileName={`COR-${transaction?.no_penawaran || 'transaksi'}.pdf`}
