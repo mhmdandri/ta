@@ -9,9 +9,10 @@ import { useEffect, useState } from 'react';
 type Props = {
     value?: User;
     onChange: (user: User) => void;
+    disabled?: boolean;
 };
 
-export function UserSelect({ value, onChange }: Props) {
+export function UserSelect({ value, onChange, disabled }: Props) {
     const [open, setOpen] = useState(false);
     const [sales, setSales] = useState<User[]>([]);
     const [query, setQuery] = useState('');
@@ -30,7 +31,7 @@ export function UserSelect({ value, onChange }: Props) {
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={open} className="w-xs justify-between">
+                <Button disabled={disabled} variant="outline" role="combobox" aria-expanded={open} className="w-xs justify-between">
                     {value ? `${value.name}` : 'Pilih sales...'}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>

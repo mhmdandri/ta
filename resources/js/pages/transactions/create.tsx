@@ -67,6 +67,7 @@ export default function TransactionsCreate() {
     const { addToast } = useToast();
     const [confirmOpen, setConfirmOpen] = useState(false);
     const { auth } = usePage<SharedData>().props;
+    const isSales = auth.user.role === 'sales';
 
     useEffect(() => {
         if (auth.user.role != 'admin' && auth.user.role != 'manager' && auth.user.role != 'gm') {
@@ -279,7 +280,7 @@ export default function TransactionsCreate() {
                         <div className="flex gap-4 p-2">
                             <div className="flex flex-col gap-2">
                                 <Label>Pilih Sales</Label>
-                                <UserSelect value={selectedUser} onChange={(sales) => setSelectedUser(sales)}></UserSelect>
+                                <UserSelect disabled={isSales} value={selectedUser} onChange={(sales) => setSelectedUser(sales)}></UserSelect>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <Label>T.O.P</Label>
