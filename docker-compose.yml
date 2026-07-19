@@ -19,6 +19,7 @@ services:
     ports:
       - '${APP_PORT:-8000}:8000'
     volumes:
+      - ./.env:/var/www/html/.env:ro
       - app-storage:/var/www/html/storage
     networks:
       - default
@@ -43,6 +44,7 @@ services:
       QUEUE_CONNECTION: database
     command: php artisan queue:work --sleep=3 --tries=3 --timeout=90
     volumes:
+      - ./.env:/var/www/html/.env:ro
       - app-storage:/var/www/html/storage
     networks:
       - default
@@ -67,6 +69,7 @@ services:
       QUEUE_CONNECTION: database
     command: php artisan schedule:work
     volumes:
+      - ./.env:/var/www/html/.env:ro
       - app-storage:/var/www/html/storage
     networks:
       - default
