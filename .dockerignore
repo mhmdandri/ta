@@ -8,6 +8,7 @@ storage/framework/cache
 storage/framework/sessions
 storage/framework/views
 public/build
+bootstrap/cache
 npm-debug.log
 Dockerfile
 docker-compose.yml

@@ -25,6 +25,9 @@ services:
       - database_default
 
   queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: cors-app:latest
     restart: unless-stopped
     env_file:
@@ -46,6 +49,9 @@ services:
       - database_default
 
   scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: cors-app:latest
     restart: unless-stopped
     env_file:
